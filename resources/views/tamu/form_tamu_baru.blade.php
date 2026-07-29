@@ -51,7 +51,7 @@
         <div class="relative inline-block">
             <div class="absolute -inset-10 bg-emerald-500/20 blur-[100px] rounded-full"></div>
             <h1 class="relative text-5xl md:text-7xl font-black italic tracking-tighter text-white leading-none">
-                SOWAN <span class="text-emerald-400">V2</span>
+                SOWAN <span class="text-emerald-400">LPSE</span>
             </h1>
             <div class="relative mt-3">
                 <p class="text-[10px] md:text-xs font-black uppercase tracking-[0.5em] text-emerald-100/90 ml-1">
@@ -186,15 +186,32 @@
             container.innerHTML = '';
             if (docsData) {
                 const dokumens = JSON.parse(docsData);
-                dokumens.forEach(doc => {
-                    container.insertAdjacentHTML('beforeend', `
-                        <div class="flex items-center justify-between p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl shadow-sm">
-                            <div class="flex items-center space-x-3 overflow-hidden">
-                                <div class="p-2 bg-white rounded-xl shadow-sm border border-emerald-50"><svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></div>
-                                <p class="text-[10px] font-black text-emerald-950 uppercase truncate">${doc.nama_dokumen}</p>
+                if (dokumens.length > 0) {
+                    dokumens.forEach(doc => {
+                        const fileHtml = `
+                            <div class="flex items-center justify-between p-3 md:p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl animate-slide-up hover:bg-emerald-50 transition-colors shadow-sm">
+                                <div class="flex items-center space-x-3 md:space-x-4 overflow-hidden">
+                                    <div class="p-2 bg-white rounded-xl shadow-sm flex-shrink-0">
+                                        <svg class="w-4 h-4 md:w-5 md:h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </div>
+                                    <div class="overflow-hidden">
+                                        <p class="text-[9px] md:text-[10px] font-black text-emerald-950 uppercase tracking-tight truncate">${doc.nama_dokumen}</p>
+                                        <p class="text-[7px] md:text-[8px] text-emerald-600 font-black italic tracking-widest uppercase">Panduan Layanan</p>
+                                    </div>
+                                </div>
+                                <a href="/storage/${doc.file_path}" download="${doc.nama_dokumen}" 
+                                   class="p-2 md:p-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-all active:scale-90 flex-shrink-0 ml-2">
+                                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </a>
                             </div>
-                        </div>`);
-                });
+                        `;
+                        container.insertAdjacentHTML('beforeend', fileHtml);
+                    });
+                }
             }
         });
     </script>

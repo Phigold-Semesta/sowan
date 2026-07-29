@@ -65,7 +65,7 @@
     <div class="max-w-2xl w-full relative z-10 animate-slide-up">
         <div class="text-center mb-8">
             <h1 class="text-4xl md:text-5xl font-black italic tracking-tighter text-white leading-none">
-                SOWAN <span class="text-emerald-400">V2</span>
+                SOWAN <span class="text-emerald-400">LPSE</span>
             </h1>
             <p class="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-emerald-100/60 mt-2">
                 LPSE Kabupaten Karawang
