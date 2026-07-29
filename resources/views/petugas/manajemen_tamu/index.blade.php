@@ -113,12 +113,12 @@
                     @forelse($kunjungans as $index => $item)
                     <tr class="hover:bg-emerald-50/40 dark:hover:bg-emerald-950/10 transition-all duration-300 group">
                         <td class="px-10 py-6 text-center">
-                             <div class="relative w-12 h-12 mx-auto flex items-center justify-center">
-                                 <div class="absolute inset-0 bg-[#008f5d] rotate-3 rounded-2xl opacity-10 group-hover:rotate-6 transition-transform"></div>
-                                 <div class="relative w-full h-full flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 border-2 border-[#008f5d] text-[14px] font-black text-[#008f5d] dark:text-emerald-400 shadow-lg">
-                                     {{ $item->nomor_antrean ?? '-' }}
-                                 </div>
-                             </div>
+                           <div class="relative w-12 h-12 mx-auto flex items-center justify-center">
+                               <div class="absolute inset-0 bg-[#008f5d] rotate-3 rounded-2xl opacity-10 group-hover:rotate-6 transition-transform"></div>
+                               <div class="relative w-full h-full flex items-center justify-center rounded-2xl bg-white dark:bg-slate-800 border-2 border-[#008f5d] text-[14px] font-black text-[#008f5d] dark:text-emerald-400 shadow-lg">
+                                   {{ $item->nomor_antrean ?? '-' }}
+                               </div>
+                           </div>
                         </td>
                         <td class="px-6 py-6 text-center">
                             <div class="flex items-center justify-center gap-5">
@@ -192,7 +192,7 @@
                                 </button>
                                 <a href="{{ route('petugas.manajemen_tamu.show', $item->id_kunjungan) }}" 
                                    class="w-11 h-11 flex items-center justify-center rounded-[1.2rem] bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all shadow-sm border border-blue-100 dark:border-blue-800/50">
-                                    <i class="fas fa-expand text-sm"></i>
+                                    <i class="fas fa-eye text-sm"></i>
                                 </a>
                                 <button type="button" onclick="confirmDelete('{{ $item->id_kunjungan }}', '{{ addslashes($item->tamu->nama_tamu ?? 'Tamu') }}')"
                                         class="w-11 h-11 flex items-center justify-center rounded-[1.2rem] bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-600 hover:text-white transition-all shadow-sm border border-red-100 dark:border-red-800/50">
@@ -333,7 +333,6 @@
     .dark .swal2-radio.custom-radio-group {
         background: #1e293b !important;
     }
-    /* Memperbesar ukuran radio button SweetAlert agar ideal */
     .swal2-radio input {
         width: 1.25rem !important;
         height: 1.25rem !important;
@@ -343,7 +342,6 @@
 </style>
 
 <script>
-    // Penanganan SweetAlert untuk Session Flash Success/Error dengan bentuk kotak konvensional dan tombol OK warna emerald
     @if(session('success'))
         Swal.fire({
             title: 'BERHASIL!',

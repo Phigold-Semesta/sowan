@@ -213,64 +213,57 @@ class PetugasController extends Controller
    /**
      * SIMPAN REGISTRASI MANUAL
      */
+ /**
+     * SIMPAN REGISTRASI MANUAL
+     */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'gmail'         => 'required|email|max:255',
-            'nama_tamu'     => 'required|string|max:255',
-            'nama_instansi' => 'required|string|max:255',
-            'no_wa'         => 'required|string|max:15',
-            'id_layanan'    => 'required|exists:layanan,id_layanan',
-            'keperluan'     => 'required|string',
+        $request->validate([
+            'gmail'                => 'required|email',
+            'nama_tamu'            => 'required|string|max:255',
+            'no_wa'                => 'required|string|max:20',
+            'nama_instansi'        => 'required|string|max:255',
+            'hadir_sebagai'        => 'required|string|max:255',
+            'jenis_tamu'           => 'required|string|max:50',
+            'alamat_kantor'        => 'required|string|max:255',
+            'id_layanan'           => 'required|exists:layanan,id_layanan',
+            'id_petugas'           => 'required|exists:petugas_tujuan,id_petugas',
+            'keterangan_keperluan' => 'nullable|string',
         ]);
 
-        try {
-            DB::beginTransaction();
+        // Simpan atau perbarui data tamu berdasarkan email (gmail)
+        $tamu = \App\Models\Tamu::updateOrCreate(
+            ['gmail' => $request->gmail],
+            [
+                'nama_tamu'     => $request->nama_tamu,
+                'no_wa'         => $request->no_wa,
+                'nama_instansi' => $request->nama_instansi,
+                'hadir_sebagai' => $request->hadir_sebagai,
+                'jenis_tamu'    => $request->jenis_tamu,
+                'alamat_kantor' => $request->alamat_kantor,
+            ]
+        );
 
-            $tamu = Tamu::updateOrCreate(
-                ['gmail' => $validated['gmail']],
-                [
-                    'nama_tamu'     => $validated['nama_tamu'],
-                    'nama_instansi' => $validated['nama_instansi'],
-                    'no_wa'         => $validated['no_wa'],
-                    'jenis_tamu'    => 'Non-Penyedia',
-                    'hadir_sebagai' => 'Non-Penyedia',
-                    'alamat_kantor' => '-', 
-                ]
-            );
+        // Hitung nomor antrean otomatis untuk hari ini (mulai dari 1)
+        $today = \Carbon\Carbon::today();
+        $lastQueue = \App\Models\Kunjungan::whereDate('created_at', $today)->max('nomor_antrean');
+        $nextQueue = $lastQueue ? $lastQueue + 1 : 1;
 
-            // PERBAIKAN: Hitung nomor antrean otomatis berdasarkan tanggal hari ini
-            $tanggalHariIni = now()->format('Y-m-d');
-            $antreanTerakhir = Kunjungan::whereDate('waktu_masuk', $tanggalHariIni)->max('nomor_antrean') ?? 0;
+        // Buat data kunjungan baru beserta nomor antrean dan keterangan keperluan
+        \App\Models\Kunjungan::create([
+            'gmail'                => $tamu->gmail,
+            'id_layanan'           => $request->id_layanan,
+            'id_petugas'           => $request->id_petugas,
+            'keterangan_keperluan' => $request->keterangan_keperluan, 
+            'nomor_antrean'        => $nextQueue, 
+            'status'               => 'Belum Dilayani',
+            'waktu_masuk'          => now(),
+        ]);
 
-            $kunjungan = Kunjungan::create([
-                'gmail'         => $tamu->gmail,
-                'id_layanan'    => $validated['id_layanan'],
-                'id_petugas'    => Auth::id(), 
-                'waktu_masuk'   => now(),
-                'status'        => 'Belum Dilayani',
-                'keperluan'     => $validated['keperluan'],
-                'nomor_antrean' => $antreanTerakhir + 1, // <-- Otomatis berurutan mulai dari 1, 2, dst.
-            ]);
-
-            AuditLog::create([
-                'id_user'    => Auth::id(),
-                'aktivitas'  => "Mendaftarkan tamu manual: {$tamu->nama_tamu} (ID Kunjungan: {$kunjungan->id_kunjungan}, No. Antrean: {$kunjungan->nomor_antrean})",
-                'waktu'      => now(),
-                'ip_address' => $request->ip(),
-                'user_agent' => $request->userAgent(),
-            ]);
-
-            DB::commit();
-            return redirect()->route('petugas.manajemen_tamu.index')
-                ->with('success', 'Tamu berhasil didaftarkan secara manual! ✅');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()->with('error', 'Gagal mendaftarkan tamu: ' . $e->getMessage());
-        }
+        return redirect()->route('petugas.manajemen_tamu.index')
+                         ->with('success', 'Data tamu dan kunjungan manual berhasil didaftarkan!');
     }
-
+   
  public function show(string|int $id)
 {
     $kunjungan = Kunjungan::with(['tamu', 'layanan', 'petugas'])->findOrFail($id);

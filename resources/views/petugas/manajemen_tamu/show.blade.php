@@ -9,7 +9,7 @@
             <h1 class="text-3xl font-black text-slate-800 uppercase tracking-tighter italic leading-none">
                 Detail <span class="text-[#008f5d]">Kunjungan</span>
             </h1>
-            <p class="text-slate-500 font-medium italic text-xs mt-2 tracking-wide">ID Registrasi: #{{ str_pad($loop->iteration ?? '1', 5, '0', STR_PAD_LEFT) }}</p>
+            <p class="text-slate-500 font-medium italic text-xs mt-2 tracking-wide">ID Registrasi: #{{ str_pad($kunjungan->id_kunjungan ?? '1', 5, '0', STR_PAD_LEFT) }}</p>
         </div>
         <a href="{{ route('petugas.manajemen_tamu.index') }}" class="px-5 py-2.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-all border border-slate-200 flex items-center gap-2">
             <i class="fas fa-arrow-left"></i> Kembali
@@ -20,11 +20,11 @@
         <div class="md:col-span-1 space-y-6">
             <div class="bg-white p-8 rounded-[2.5rem] border border-emerald-50 shadow-xl text-center transform hover:scale-[1.02] transition-transform">
                 <div class="w-24 h-24 bg-emerald-100 text-[#008f5d] rounded-[2rem] flex items-center justify-center mx-auto mb-6 text-3xl font-black shadow-inner">
-                    {{ substr($tamu->nama_tamu, 0, 1) }}
+                    {{ substr($tamu->nama_tamu ?? 'T', 0, 1) }}
                 </div>
-                <h3 class="font-black text-slate-800 uppercase tracking-tight text-lg leading-tight">{{ $tamu->nama_tamu }}</h3>
+                <h3 class="font-black text-slate-800 uppercase tracking-tight text-lg leading-tight">{{ $tamu->nama_tamu ?? '-' }}</h3>
                 <div class="inline-block px-4 py-1.5 bg-emerald-50 text-[#008f5d] rounded-full text-[9px] font-black tracking-widest uppercase mt-3 border border-emerald-100">
-                    {{ $tamu->nama_instansi }}
+                    {{ $tamu->nama_instansi ?? '-' }}
                 </div>
             </div>
 
@@ -39,14 +39,8 @@
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75"></span>
                         <span class="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
                     </span>
-                    {{ ucfirst($tamu->status ?? 'Belum') }} Dilayani
+                    {{ $kunjungan->status ?? 'Belum Dilayani' }}
                 </p>
-                
-                <hr class="my-6 border-emerald-400/30">
-                
-                <a href="{{ route('petugas.manajemen_tamu.edit', $tamu) }}" class="flex items-center justify-center gap-3 bg-white/10 hover:bg-white text-white hover:text-[#008f5d] py-4 rounded-2xl transition-all duration-300 font-black text-[10px] uppercase tracking-[0.2em] shadow-lg">
-                    <i class="fas fa-user-edit text-xs"></i> Perbarui Status
-                </a>
             </div>
         </div>
 
@@ -56,33 +50,51 @@
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                         <i class="fas fa-envelope text-emerald-500"></i> Email / Gmail
                     </label>
-                    <p class="font-black text-slate-700 text-lg tracking-tight lowercase">{{ $tamu->gmail }}</p>
+                    <p class="font-black text-slate-700 text-lg tracking-tight lowercase">{{ $tamu->gmail ?? '-' }}</p>
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                         <i class="fab fa-whatsapp text-emerald-500"></i> WhatsApp
                     </label>
-                    <p class="font-black text-slate-700 text-lg tracking-tight">{{ $tamu->no_wa }}</p>
+                    <p class="font-black text-slate-700 text-lg tracking-tight">{{ $tamu->no_wa ?? '-' }}</p>
                 </div>
                 <div class="space-y-1">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                         <i class="fas fa-user-tag text-emerald-500"></i> Hadir Sebagai
                     </label>
-                    <p class="font-black text-slate-700 text-lg tracking-tight uppercase">{{ $tamu->hadir_sebagai }}</p>
+                    <p class="font-black text-slate-700 text-lg tracking-tight uppercase">{{ $tamu->hadir_sebagai ?? '-' }}</p>
                 </div>
                 <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <i class="fas fa-users text-emerald-500"></i> Jenis Tamu
+                    </label>
+                    <p class="font-black text-slate-700 text-lg tracking-tight uppercase">{{ $tamu->jenis_tamu ?? '-' }}</p>
+                </div>
+                <div class="space-y-1 sm:col-span-2">
                     <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
                         <i class="fas fa-map-marker-alt text-red-400"></i> Alamat Kantor
                     </label>
                     <p class="font-black text-slate-700 text-sm tracking-tight uppercase leading-snug">{{ $tamu->alamat_kantor ?? 'Tidak Diisi' }}</p>
                 </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <i class="fas fa-concierge-bell text-emerald-500"></i> Layanan Dituju
+                    </label>
+                    <p class="font-black text-slate-700 text-sm tracking-tight uppercase">{{ $kunjungan->layanan->nama_layanan ?? '-' }}</p>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                        <i class="fas fa-user-tie text-emerald-500"></i> Petugas Penerima
+                    </label>
+                    <p class="font-black text-slate-700 text-sm tracking-tight uppercase">{{ $kunjungan->petugasTujuan->nama_petugas ?? ($kunjungan->petugas->nama_petugas ?? 'Petugas Piket') }}</p>
+                </div>
             </div>
 
             <div class="space-y-4">
-                <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block italic">Maksud & Keperluan Kunjungan</label>
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block italic">Keterangan Keperluan</label>
                 <div class="bg-slate-50/80 p-8 rounded-[2rem] border-2 border-slate-50 italic font-bold text-slate-600 leading-relaxed text-base shadow-inner relative">
                     <i class="fas fa-quote-left absolute top-4 left-4 text-slate-200 text-xl"></i>
-                    "{{ $tamu->keperluan ?? 'Tidak ada keterangan keperluan.' }}"
+                    "{{ $kunjungan->keterangan_keperluan ?? 'Tidak ada keterangan keperluan.' }}"
                 </div>
             </div>
 
@@ -93,7 +105,9 @@
                     </div>
                     <div class="flex flex-col">
                         <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Waktu Kedatangan</span>
-                        <span class="text-slate-800 font-black text-sm tracking-tighter">{{ $tamu->created_at->format('d F Y | H:i') }} WIB</span>
+                        <span class="text-slate-800 font-black text-sm tracking-tighter">
+                            {{ $kunjungan->created_at ? \Carbon\Carbon::parse($kunjungan->created_at)->setTimezone('Asia/Jakarta')->format('d F Y | H:i') : '-' }} WIB
+                        </span>
                     </div>
                 </div>
                 

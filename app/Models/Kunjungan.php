@@ -48,6 +48,7 @@ class Kunjungan extends Model
         'waktu_masuk', 
         'waktu_keluar', 
         'nomor_antrean',
+        'keterangan_keperluan',
         'status'
     ];
 
