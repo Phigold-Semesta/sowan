@@ -6,6 +6,8 @@
     <title>Kunjungan Berhasil - SOWAN v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Tambahkan library html2pdf.js untuk download PDF langsung -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -83,7 +85,8 @@
             </div>
         </div>
 
-        <div class="success-card bg-white rounded-[2.5rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] p-8 md:p-16 relative overflow-hidden border border-white/40">
+        <!-- Bagian kartu yang akan di-generate langsung jadi PDF -->
+        <div id="pdf-content" class="success-card bg-white rounded-[2.5rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] p-8 md:p-16 relative overflow-hidden border border-white/40">
             
             <div class="mb-6 md:mb-8 flex justify-center">
                 <div class="relative check-wrapper">
@@ -104,7 +107,6 @@
 
             <div class="my-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                 <p class="text-[9px] md:text-xs font-bold text-emerald-600 uppercase tracking-[0.2em] mb-1">Nomor Antrean Anda</p>
-                <!-- Diperbaiki membaca dari request parameter URL -->
                 <h3 class="text-5xl md:text-6xl font-black text-emerald-900 tracking-tight">{{ request('antrean', '-') }}</h3>
             </div>
             
@@ -113,6 +115,15 @@
             </p>
 
             <div class="space-y-4">
+                <!-- Tombol Unduh PDF Langsung (Tanpa dialog print) -->
+                <button onclick="downloadPDF()" class="w-full py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] md:text-xs uppercase tracking-[0.3em] rounded-xl md:rounded-3xl transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>Unduh Bukti PDF</span>
+                </button>
+
+                <!-- Tombol Selesai & Keluar -->
                 <a href="{{ url('/') }}" class="inline-flex items-center justify-center w-full py-4 md:py-6 bg-emerald-900 hover:bg-black text-white font-black text-[9px] md:text-xs uppercase tracking-[0.3em] rounded-xl md:rounded-3xl transition-all shadow-xl hover:shadow-emerald-950/20 group active:scale-95">
                     <svg class="w-4 h-4 mr-3 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -134,6 +145,19 @@
     </div>
 
     <script>
+        // Fungsi untuk mengonversi elemen #pdf-content menjadi file PDF dan langsung mengunduhnya
+        function downloadPDF() {
+            const element = document.getElementById('pdf-content');
+            const options = {
+                margin:       10,
+                filename:     'Bukti-Antrean-SOWAN.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().from(element).set(options).save();
+        }
+
         window.onload = function() {
             const duration = 3 * 1000;
             const end = Date.now() + duration;

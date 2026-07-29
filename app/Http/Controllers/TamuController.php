@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TamuController extends Controller
 {
@@ -423,4 +424,19 @@ class TamuController extends Controller
         return redirect()->route('tamu.rating.index')
                          ->with('success', 'Terima kasih atas rating dan saran Anda!');
     }
+
+    public function unduhPdfAntrean(Request $request)
+{
+    $data = [
+        'antrean'   => $request->query('antrean', 'A-00'),
+        'nama_tamu' => $request->query('nama_tamu', 'Tamu Terhormat'),
+        'instansi'  => $request->query('instansi', '-'),
+        'layanan'   => $request->query('layanan', 'Layanan Umum'),
+        'petugas'   => $request->query('petugas', 'Petugas Piket'),
+        'waktu'     => now()->format('d-m-Y H:i'),
+    ];
+
+    $pdf = Pdf::loadView('tamu.pdf_antrean', $data);
+    return $pdf->download('Bukti-Antrean-' . $data['antrean'] . '.pdf');
+}
 }

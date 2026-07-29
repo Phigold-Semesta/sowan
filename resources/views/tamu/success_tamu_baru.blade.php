@@ -61,6 +61,24 @@
         ::-webkit-scrollbar { width: 5px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #065f46; border-radius: 10px; }
+
+        /* Pengaturan khusus saat dicetak atau disimpan ke PDF */
+        @media print {
+            body {
+                background: white !important;
+                display: block !important;
+            }
+            .blob, .no-print {
+                display: none !important;
+            }
+            .success-card {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 10px !important;
+            }
+        }
     </style>
 </head>
 <body class="p-6">
@@ -70,7 +88,7 @@
 
     <div class="max-w-sm md:max-w-xl w-full text-center relative z-10">
         
-        <div class="mb-6 md:mb-10">
+        <div class="mb-6 md:mb-10 no-print">
             <h1 class="text-4xl md:text-6xl font-black italic tracking-tighter text-white leading-none">
                 SOWAN <span class="text-emerald-400">V2</span>
             </h1>
@@ -83,7 +101,7 @@
             </div>
         </div>
 
-        <div class="success-card bg-white rounded-[2.5rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] p-8 md:p-16 relative overflow-hidden border border-white/40">
+        <div id="pdf-content" class="success-card bg-white rounded-[2.5rem] md:rounded-[4rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] p-8 md:p-16 relative overflow-hidden border border-white/40">
             
             <div class="mb-6 md:mb-8 flex justify-center">
                 <div class="relative check-wrapper">
@@ -111,7 +129,16 @@
                 Terima kasih, <span class="text-emerald-700 italic">{{ $nama_tamu ?? 'Tamu Terhormat' }}</span>. Data Anda telah tersimpan dalam sistem SOWAN.
             </p>
 
-            <div class="space-y-4">
+            <div class="space-y-4 no-print">
+                <!-- Tombol Unduh / Cetak Bukti PDF (Native & Bebas Error Ngrok) -->
+                <button type="button" onclick="downloadPDF()" class="w-full py-4 md:py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[9px] md:text-xs uppercase tracking-[0.3em] rounded-xl md:rounded-3xl transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center space-x-2 active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <span>Unduh / Cetak Bukti PDF</span>
+                </button>
+
+                <!-- Tombol Selesai & Keluar -->
                 <a href="{{ url('/') }}" class="inline-flex items-center justify-center w-full py-4 md:py-6 bg-emerald-900 hover:bg-black text-white font-black text-[9px] md:text-xs uppercase tracking-[0.3em] rounded-xl md:rounded-3xl transition-all shadow-xl hover:shadow-emerald-950/20 group active:scale-95">
                     <svg class="w-4 h-4 mr-3 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -120,19 +147,23 @@
                 </a>
             </div>
 
-            <div class="mt-8 md:mt-12 flex items-center justify-center space-x-3 opacity-30">
+            <div class="mt-8 md:mt-12 flex items-center justify-center space-x-3 opacity-30 no-print">
                 <div class="h-[1px] w-6 bg-emerald-900"></div>
                 <p class="text-[7px] md:text-[8px] font-black uppercase tracking-widest text-emerald-900">Secure Digital Record</p>
                 <div class="h-[1px] w-6 bg-emerald-900"></div>
             </div>
         </div>
 
-        <p class="mt-8 md:mt-12 text-[8px] md:text-[10px] text-emerald-100/20 uppercase font-black tracking-[0.5em]">
+        <p class="mt-8 md:mt-12 text-[8px] md:text-[10px] text-emerald-100/20 uppercase font-black tracking-[0.5em] no-print">
             Verified Guest Management System
         </p>
     </div>
 
     <script>
+        function downloadPDF() {
+            window.print();
+        }
+
         window.onload = function() {
             const duration = 3 * 1000;
             const end = Date.now() + duration;

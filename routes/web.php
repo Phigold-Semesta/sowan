@@ -103,11 +103,16 @@ Route::prefix('tamu')->name('tamu.')->middleware('tamu.auth')->group(function ()
     Route::get('/hadir', [TamuController::class, 'index'])->name('index'); 
     Route::post('/simpan', [TamuController::class, 'store'])->name('store');
     Route::get('/panduan/{id}', [TamuController::class, 'downloadPanduan'])->name('panduan.download');
+   
 });
 
+// Rute Unduh PDF diletakkan di sini agar bebas diakses tanpa harus login/auth
+    Route::get('/unduh-pdf', [TamuController::class, 'unduhPdfAntrean'])->name('unduh.pdf');
 // Grup B: Terbuka (Tidak pakai middleware tamu.auth) 
 // Agar bisa diakses tepat setelah tamu logout di TamuController@store
 Route::prefix('tamu')->name('tamu.')->group(function () {
+    // Rute Unduh PDF diletakkan di sini agar bebas diakses tanpa harus login/auth
+    Route::get('/unduh-pdf', [TamuController::class, 'unduhPdfAntrean'])->name('unduh.pdf');
     Route::get('/sukses/baru/{nama_tamu}', function ($nama_tamu) {
         return view('tamu.success_tamu_baru', ['nama_tamu' => urldecode($nama_tamu)]);
     })->name('success_baru')->where('nama_tamu', '.*');

@@ -197,6 +197,25 @@ class PetugasController extends Controller
     }
 
     /**
+     * Menyimpan tanggapan atau balasan petugas terhadap rating ulasan tamu.
+     */
+    public function ratingTanggapan(Request $request, $id)
+    {
+        $request->validate([
+            'tanggapan' => 'required|string|max:1000',
+        ]);
+
+        $rating = RatingLayanan::findOrFail($id);
+
+        $rating->update([
+            'tanggapan' => $request->tanggapan,
+            'id_user'   => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Tanggapan ulasan berhasil dikirim.');
+    }
+
+    /**
      * FORM REGISTRASI MANUAL
      */
     public function create()

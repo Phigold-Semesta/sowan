@@ -88,20 +88,11 @@
                 </a>
 
                 <div>
-                    <button @click="openKunjungan = !openKunjungan" class="w-full nav-item flex items-center py-4 px-5 rounded-2xl transition-all hover:bg-white/10">
-                        <i class="fas fa-clipboard-list w-6 text-center text-sm"></i>
-                        <span class="nav-text ml-3 text-sm font-bold tracking-wide flex-1 text-left">Kunjungan</span>
-                        <i class="nav-text fas fa-chevron-down text-[10px]"></i>
-                    </button>
-                    <div x-show="openKunjungan" x-cloak class="pl-5 mt-1 space-y-1">
-                        <a href="{{ route('tamu.form_tamu_baru') }}" class="flex items-center py-3 px-4 rounded-xl text-sm text-emerald-100 hover:text-white hover:bg-white/10 font-bold transition-all">
-                            <i class="fas fa-user-plus w-6 text-xs opacity-70"></i><span class="ml-2">Tamu Baru</span>
-                        </a>
-                        <a href="{{ route('tamu.form_tamu_lama') }}" class="flex items-center py-3 px-4 rounded-xl text-sm text-emerald-100 hover:text-white hover:bg-white/10 font-bold transition-all">
-                            <i class="fas fa-user-clock w-6 text-xs opacity-70"></i><span class="ml-2">Tamu Lama</span>
-                        </a>
-                    </div>
-                </div>
+    <a href="{{ url('/tamu-onsite') }}" class="w-full nav-item flex items-center py-4 px-5 rounded-2xl transition-all hover:bg-white/10">
+        <i class="fas fa-clipboard-list w-6 text-center text-sm"></i>
+        <span class="nav-text ml-3 text-sm font-bold tracking-wide flex-1 text-left">Kunjungan</span>
+    </a>
+</div>
 
                 <a href="{{ route('tamu.konsultasi_online.index') }}" class="nav-item flex items-center py-4 px-5 rounded-2xl transition-all hover:bg-white/10">
                     <i class="fas fa-video w-6 text-center text-sm"></i><span class="nav-text ml-3 text-sm font-bold tracking-wide">Konsultasi Online</span>
