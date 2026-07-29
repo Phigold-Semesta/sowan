@@ -81,9 +81,18 @@ Route::delete('/konsultasi/{id}/hapus', [TamuController::class, 'hapusKonsultasi
 });
 
 // --- 3. JALUR TAMU ONSITE ---
+// --- 3. JALUR TAMU ONSITE ---
 Route::prefix('tamu-onsite')->name('tamu.onsite.')->group(function () {
     Route::get('/', [AuthController::class, 'showTamuOnsite'])->name('view');
     Route::post('/check-email', [AuthController::class, 'checkEmailOnsite'])->name('check-email');
+});
+
+// --- TAMBAHAN: RUTE VALIDASI TAMU LAMA ONSITE ---
+Route::prefix('tamu')->name('tamu.')->middleware('tamu.auth')->group(function () {
+    // Route untuk menampilkan halaman validasi pilihan data tamu lama
+    Route::get('/validasi-lama', [TamuController::class, 'validasiLamaIndex'])->name('validasi_lama');
+    // Route untuk memproses pilihan tombol (gunakan data lama atau ubah baru)
+    Route::post('/proses-validasi', [TamuController::class, 'prosesValidasiLama'])->name('proses_validasi');
 });
 
 // --- 4. PROSES KUNJUNGAN ---

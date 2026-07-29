@@ -50,6 +50,7 @@ class AuthController extends Controller
         $tamu = Tamu::where('gmail', $request->gmail)->first();
 
         if (!$tamu) {
+            // Jika tamu belum terdaftar, buat data baru (Implicit Registration)
             $tamu = Tamu::create([
                 'gmail'         => $request->gmail,
                 'nama_tamu'     => 'Tamu Baru',
@@ -64,8 +65,9 @@ class AuthController extends Controller
             Auth::guard('tamu')->login($tamu);
             return redirect()->route('tamu.form_tamu_baru')->with('success', 'Silakan lengkapi data kunjungan.');
         } else {
+            // Jika tamu sudah ada (Tamu Lama), login-kan dan arahkan ke view validasi pilihan data
             Auth::guard('tamu')->login($tamu);
-            return redirect()->route('tamu.form_tamu_lama')->with('success', 'Selamat datang kembali, silakan isi data kunjungan.');
+            return redirect()->route('tamu.validasi_lama')->with('success', 'Email terdeteksi. Silakan konfirmasi data Anda.');
         }
     }
 

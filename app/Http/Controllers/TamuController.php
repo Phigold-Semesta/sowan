@@ -6,6 +6,8 @@ use App\Models\Tamu;
 use App\Models\Kunjungan;
 use App\Models\Layanan;
 use App\Models\PetugasTujuan;
+use App\Models\Konsultasi;
+use app\models\RatingLayanan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -24,14 +26,60 @@ class TamuController extends Controller
             return redirect()->route('tamu.login.view')->with('error', 'Sesi Anda telah berakhir.');
         }
         
-        $riwayatKunjungan = Kunjungan::where('gmail', $tamu->gmail)
-                                    ->orderBy('waktu_masuk', 'desc')
-                                    ->paginate(5);
+        // Query riwayat kunjungan khusus tamu yang sedang login
+        $riwayatKunjunganQuery = Kunjungan::where('gmail', $tamu->gmail)
+                                    ->orderBy('waktu_masuk', 'desc');
 
-        return view('tamu.dashboard', compact('tamu', 'riwayatKunjungan'));
+        $totalKunjungan = $riwayatKunjunganQuery->count();
+        $kunjunganTerakhirRecord = $riwayatKunjunganQuery->first();
+        
+        $riwayatKunjungan = $riwayatKunjunganQuery->paginate(5);
+
+        // Menggunakan model Layanan dengan relasi dokumens untuk modal buku pedoman
+        $dokumenPedoman = Layanan::with('dokumens')->get();
+
+        return view('tamu.dashboard', compact(
+            'tamu', 
+            'riwayatKunjungan', 
+            'totalKunjungan', 
+            'kunjunganTerakhirRecord', 
+            'dokumenPedoman'
+        ));
     }
 
-/**
+    /**
+     * Tampilan halaman validasi pilihan bagi tamu lama (Onsite)
+     */
+    public function validasiLamaIndex()
+    {
+        $tamu = Auth::guard('tamu')->user();
+        
+        if (!$tamu) {
+            return redirect()->route('tamu.onsite.view')->with('error', 'Sesi Anda telah berakhir.');
+        }
+
+        return view('tamu.validasi_lama', compact('tamu'));
+    }
+
+    /**
+     * Memproses pilihan dari halaman validasi tamu lama
+     */
+    public function prosesValidasiLama(Request $request)
+    {
+        $request->validate([
+            'pilihan' => 'required|in:lama,baru'
+        ]);
+
+        if ($request->pilihan === 'lama') {
+            // Jika memilih menggunakan data lama, langsung arahkan ke form isi kunjungan lama
+            return redirect()->route('tamu.form_tamu_lama');
+        } else {
+            // Jika memilih ingin memperbarui/mengisi data baru, arahkan ke form edit profil/tamu baru
+            return redirect()->route('tamu.form_tamu_baru')->with('info', 'Silakan perbarui data Anda.');
+        }
+    }
+
+    /**
      * Tampilan Halaman Riwayat Kunjungan Tamu
      */
     public function riwayat()
@@ -44,36 +92,36 @@ class TamuController extends Controller
 
         // Mengambil seluruh riwayat kunjungan khusus untuk tamu yang sedang login
         $riwayatKunjungan = Kunjungan::where('gmail', $tamu->gmail)
-                                     ->orderBy('waktu_masuk', 'desc')
-                                     ->get();
+                                   ->orderBy('waktu_masuk', 'desc')
+                                   ->get();
 
         return view('tamu.riwayat.index', compact('tamu', 'riwayatKunjungan'));
     }
 
-  /**
- * Tampilan Halaman Konsultasi Online (List + Form Dropdown)
- */
-public function konsultasiOnline()
-{
-    $tamu = Auth::guard('tamu')->user();
-    if (!$tamu) {
-        return redirect()->route('tamu.login.view')->with('error', 'Sesi Anda telah berakhir.');
-    }
-    
-    // Perbaikan: Pastikan relasi 'user' dimuat agar nama pemateri muncul di sisi tamu
-    $jadwal_konsultasi = \App\Models\Konsultasi::with(['user', 'layanan'])
-                                            ->where('gmail', $tamu->gmail)
-                                            ->orderBy('created_at', 'desc') 
-                                            ->get();
+    /**
+     * Tampilan Halaman Konsultasi Online (List + Form Dropdown)
+     */
+    public function konsultasiOnline()
+    {
+        $tamu = Auth::guard('tamu')->user();
+        if (!$tamu) {
+            return redirect()->route('tamu.login.view')->with('error', 'Sesi Anda telah berakhir.');
+        }
+        
+        // Perbaikan: Pastikan relasi 'user' dimuat agar nama pemateri muncul di sisi tamu
+        $jadwal_konsultasi = \App\Models\Konsultasi::with(['user', 'layanan'])
+                                                ->where('gmail', $tamu->gmail)
+                                                ->orderBy('created_at', 'desc') 
+                                                ->get();
 
-    $layanan = Layanan::orderBy('nama_layanan', 'asc')->get();
-    
-    $petugas = \App\Models\User::whereIn('role', ['administrator', 'petugas', 'pimpinan'])
+        $layanan = Layanan::orderBy('nama_layanan', 'asc')->get();
+        
+        $petugas = \App\Models\User::whereIn('role', ['administrator', 'petugas', 'pimpinan'])
                                 ->orderBy('nama_lengkap', 'asc')
                                 ->get();
 
-    return view('tamu.konsultasi_online.index', compact('tamu', 'jadwal_konsultasi', 'layanan', 'petugas'));
-}
+        return view('tamu.konsultasi_online.index', compact('tamu', 'jadwal_konsultasi', 'layanan', 'petugas'));
+    }
 
     /**
      * Menyimpan pengajuan janji konsultasi baru oleh tamu
@@ -105,56 +153,56 @@ public function konsultasiOnline()
                          ->with('success', 'Janji konsultasi berhasil diajukan, silakan tunggu konfirmasi petugas.');
     }
 
-/**
- * Memperbarui pengajuan janji konsultasi oleh tamu
- */
-public function updateKonsultasi(Request $request, $id)
-{
-    $tamu = Auth::guard('tamu')->user();
-    
-    // Validasi input
-    $validated = $request->validate([
-        'id_layanan'       => 'required|exists:layanan,id_layanan',
-        'id_petugas'       => 'required|exists:user,id_user',
-        'waktu_mulai'      => 'required|date|after:now',
-        'topik_konsultasi' => 'required|string|max:255',
-        'durasi_menit'     => 'required|integer|min:15|max:90',
-    ]);
+    /**
+     * Memperbarui pengajuan janji konsultasi oleh tamu
+     */
+    public function updateKonsultasi(Request $request, $id)
+    {
+        $tamu = Auth::guard('tamu')->user();
+        
+        // Validasi input
+        $validated = $request->validate([
+            'id_layanan'       => 'required|exists:layanan,id_layanan',
+            'id_petugas'       => 'required|exists:user,id_user',
+            'waktu_mulai'      => 'required|date|after:now',
+            'topik_konsultasi' => 'required|string|max:255',
+            'durasi_menit'     => 'required|integer|min:15|max:90',
+        ]);
 
-    $konsultasi = \App\Models\Konsultasi::where('id_konsultasi', $id)
+        $konsultasi = \App\Models\Konsultasi::where('id_konsultasi', $id)
                                         ->where('gmail', $tamu->gmail)
                                         ->where('status', 'pending') // Hanya bisa edit jika masih pending
                                         ->firstOrFail();
 
-    $konsultasi->update([
-        'id_layanan'       => $validated['id_layanan'],
-        'id_user'          => $validated['id_petugas'],
-        'topik_konsultasi' => $validated['topik_konsultasi'],
-        'waktu_mulai'      => $validated['waktu_mulai'],
-        'durasi_menit'     => $validated['durasi_menit'],
-    ]);
+        $konsultasi->update([
+            'id_layanan'       => $validated['id_layanan'],
+            'id_user'          => $validated['id_petugas'],
+            'topik_konsultasi' => $validated['topik_konsultasi'],
+            'waktu_mulai'      => $validated['waktu_mulai'],
+            'durasi_menit'     => $validated['durasi_menit'],
+        ]);
 
-    return redirect()->route('tamu.konsultasi_online.index')
-                     ->with('success', 'Janji konsultasi berhasil diperbarui.');
-}
+        return redirect()->route('tamu.konsultasi_online.index')
+                         ->with('success', 'Janji konsultasi berhasil diperbarui.');
+    }
 
-/**
- * Menghapus pengajuan janji konsultasi oleh tamu
- */
-public function hapusKonsultasi($id)
-{
-    $tamu = Auth::guard('tamu')->user();
+    /**
+     * Menghapus pengajuan janji konsultasi oleh tamu
+     */
+    public function hapusKonsultasi($id)
+    {
+        $tamu = Auth::guard('tamu')->user();
 
-    $konsultasi = \App\Models\Konsultasi::where('id_konsultasi', $id)
+        $konsultasi = \App\Models\Konsultasi::where('id_konsultasi', $id)
                                         ->where('gmail', $tamu->gmail)
                                         ->where('status', 'pending') // Hanya bisa hapus jika masih pending
                                         ->firstOrFail();
 
-    $konsultasi->delete();
+        $konsultasi->delete();
 
-    return redirect()->route('tamu.konsultasi_online.index')
-                     ->with('success', 'Janji konsultasi berhasil dihapus.');
-}
+        return redirect()->route('tamu.konsultasi_online.index')
+                         ->with('success', 'Janji konsultasi berhasil dihapus.');
+    }
 
     /**
      * Tampilan form tamu (Resepsionis Utama)
@@ -175,12 +223,45 @@ public function hapusKonsultasi($id)
         if ($isNewGuest) {
             return view('tamu.form_tamu_baru', ['gmail' => $tamu->gmail, 'layanan' => $layanan, 'petugas' => $petugas]);
         } else {
+            // Tampilkan form kunjungan tamu lama
             return view('tamu.form_tamu_lama', compact('tamu', 'layanan', 'petugas'));
         }
     }
 
-    public function showFormBaru() { return $this->index(); }
-    public function showFormLama() { return $this->index(); }
+    /**
+     * Tampilan Form Tamu Baru secara eksplisit
+     */
+    public function showFormBaru() 
+    {
+        $tamu = Auth::guard('tamu')->user();
+        
+        if (!$tamu) {
+            return redirect()->route('tamu.onsite.view')->with('error', 'Sesi Anda telah berakhir.');
+        }
+
+        $layanan = Layanan::with('dokumens')->orderBy('nama_layanan', 'asc')->get();
+        $petugas = PetugasTujuan::orderBy('nama_petugas', 'asc')->get();
+        $gmail = $tamu->gmail;
+
+        return view('tamu.form_tamu_baru', compact('gmail', 'layanan', 'petugas'));
+    }
+
+    /**
+     * Tampilan Form Tamu Lama secara eksplisit
+     */
+    public function showFormLama() 
+    {
+        $tamu = Auth::guard('tamu')->user();
+        
+        if (!$tamu) {
+            return redirect()->route('tamu.onsite.view')->with('error', 'Sesi Anda telah berakhir.');
+        }
+
+        $layanan = Layanan::with('dokumens')->orderBy('nama_layanan', 'asc')->get();
+        $petugas = PetugasTujuan::orderBy('nama_petugas', 'asc')->get();
+
+        return view('tamu.form_tamu_lama', compact('tamu', 'layanan', 'petugas'));
+    }
 
     public function store(Request $request)
     {
@@ -195,6 +276,7 @@ public function hapusKonsultasi($id)
             'nama_instansi' => 'nullable|string',
             'alamat_kantor' => 'nullable|string',
             'hadir_sebagai' => 'nullable|string',
+            'tipe_tamu'     => 'nullable|string', // Validasi opsional untuk tipe_tamu
         ]);
 
         try {
@@ -244,11 +326,22 @@ public function hapusKonsultasi($id)
 
             Auth::guard('tamu')->logout();
 
-            $routeName = $result['isNew'] ? 'tamu.success_baru' : 'tamu.success_lama';
+            // Tentukan rute sukses berdasarkan input tipe_tamu yang dikirimkan form
+            $tipeTamu = $request->input('tipe_tamu');
+
+            if ($tipeTamu === 'baru') {
+                $routeName = 'tamu.success_baru';
+            } elseif ($tipeTamu === 'lama') {
+                $routeName = 'tamu.success_lama';
+            } else {
+                $routeName = $result['isNew'] ? 'tamu.success_baru' : 'tamu.success_lama';
+            }
             
+            // Mengirim antrean sebagai query parameter agar tidak hilang saat logout
             return redirect()->route($routeName, [
-                'nama_tamu' => urlencode($result['tamu']->nama_tamu)
-            ])->with('antrean', $result['kunjungan']->nomor_antrean);
+                'nama_tamu' => urlencode($result['tamu']->nama_tamu),
+                'antrean'   => $result['kunjungan']->nomor_antrean
+            ]);
 
         } catch (\Exception $e) {
             Log::error("Error saat simpan tamu: " . $e->getMessage());

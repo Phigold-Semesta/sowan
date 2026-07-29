@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registrasi Berhasil - SOWAN v2</title>
+    <title>Kunjungan Berhasil - SOWAN v2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -104,7 +104,7 @@
 
             <div class="my-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
                 <p class="text-[9px] md:text-xs font-bold text-emerald-600 uppercase tracking-[0.2em] mb-1">Nomor Antrean Anda</p>
-                <h3 class="text-5xl md:text-6xl font-black text-emerald-900 tracking-tight">{{ session('antrean', '-') }}</h3>
+                <h3 class="text-5xl md:text-6xl font-black text-emerald-900 tracking-tight">{{ request('antrean', session('antrean', '-')) }}</h3>
             </div>
             
             <p class="text-gray-500 text-[10px] md:text-sm font-bold max-w-[200px] md:max-w-xs mx-auto leading-relaxed mb-8 md:mb-10 uppercase tracking-wide">
