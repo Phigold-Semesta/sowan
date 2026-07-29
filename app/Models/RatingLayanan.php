@@ -16,38 +16,34 @@ class RatingLayanan extends Model
     protected $table = 'rating_layanan';
 
     /**
-     * PERBAIKAN: Menetapkan id_kunjungan sebagai Primary Key.
-     * Sebagai Weak Entity (Identifying Relationship), ia tidak punya ID sendiri.
+     * PRIMARY KEY: Menggunakan id_rating agar selaras dengan routing dan view pimpinan ($rating->id_rating).
      */
-    protected $primaryKey = 'id_kunjungan';
+    protected $primaryKey = 'id_rating';
 
     /**
-     * PERBAIKAN: Nonaktifkan auto-increment.
-     * Karena PK ini bersifat manual (mengambil value dari tabel kunjungan).
+     * Auto-increment diaktifkan karena id_rating bersifat increment.
      */
-    public $incrementing = false;
+    public $incrementing = true;
 
     /**
      * Tipe data Primary Key.
-     * Menggunakan string atau int sesuai dengan tipe data di tabel kunjungan.
      */
     protected $keyType = 'int';
 
     /**
      * Atribut yang dapat diisi massal.
-     * Pastikan semua kolom yang diperlukan ada di sini.
+     * Diselaraskan menggunakan 'skor' agar cocok dengan database dan controller.
      */
     protected $fillable = [
         'id_kunjungan', 
-        'skor_rating', 
+        'skor', 
         'komentar', 
         'tanggapan',
         'id_user' 
     ];
 
     /**
-     * RELASI: Ke Kunjungan (Satu rating milik satu kunjungan).
-     * Ini adalah jangkar utama sebagai Weak Entity.
+     * RELASI: Ke Kunjungan (Setiap rating terikat ke satu kunjungan).
      */
     public function kunjungan(): BelongsTo
     {
@@ -55,21 +51,10 @@ class RatingLayanan extends Model
     }
 
     /**
-     * RELASI: Ke User (Petugas yang memberikan tanggapan/balasan).
-     * Foreign Key: id_user.
+     * RELASI: Ke User (Petugas/Pimpinan yang memberikan tanggapan).
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'id_user', 'id_user');
-    }
-
-    /**
-     * TAMBAHAN PENYEMPURNAAN:
-     * Fungsi ini memastikan saat pencarian data melalui Eloquent (seperti findOrFail),
-     * Laravel mencari berdasarkan id_kunjungan dengan benar.
-     */
-    public function getIncrementing()
-    {
-        return false;
     }
 }

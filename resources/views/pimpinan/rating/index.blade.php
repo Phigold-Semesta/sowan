@@ -31,7 +31,7 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                     <i class="fas fa-search text-sm"></i>
                 </div>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama tamu..." 
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama tamu atau isi ulasan..." 
                        class="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900/50 border-0 rounded-2xl text-xs font-bold focus:ring-2 focus:ring-[#046A38]/20 dark:text-slate-200">
             </div>
             <button type="submit" class="px-8 py-3.5 bg-[#046A38] text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#03532B] transition-all active:scale-95 flex items-center justify-center gap-2">
@@ -47,7 +47,7 @@
                 <thead>
                     <tr class="bg-slate-50/80 dark:bg-slate-900/50 border-b border-emerald-50 dark:border-slate-700 text-nowrap">
                         <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Profil Tamu</th>
-                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Layanan</th>
+                        <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Layanan & Ulasan</th>
                         <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Penilaian</th>
                         <th class="px-6 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Status</th>
                         <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Aksi</th>
@@ -65,31 +65,35 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-5">
-                            <span class="text-[10px] font-black text-[#046A38] bg-emerald-50 px-3 py-1 rounded-xl uppercase">
+                        <td class="px-6 py-5 max-w-xs">
+                            <span class="inline-block text-[9px] font-black text-[#046A38] bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-lg uppercase mb-1">
                                 {{ $rating->kunjungan->layanan->nama_layanan ?? 'Umum' }}
                             </span>
+                            <p class="text-xs font-bold text-slate-600 dark:text-slate-300 truncate italic">
+                                "{{ $rating->komentar ?? $rating->saran ?? 'Tidak ada catatan ulasan.' }}"
+                            </p>
                         </td>
                         <td class="px-6 py-5">
                             <div class="flex items-center text-amber-400">
+                                @php $score = $rating->skor ?? $rating->skor_rating ?? 0; @endphp
                                 @for($i = 1; $i <= 5; $i++)
-                                    <i class="{{ $i <= $rating->skor ? 'fas' : 'far' }} fa-star text-xs"></i>
+                                    <i class="{{ $i <= $score ? 'fas' : 'far' }} fa-star text-xs"></i>
                                 @endfor
                             </div>
                         </td>
                         <td class="px-6 py-5">
-                            @if($rating->tanggapan)
-                                <span class="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">Ditanggapi</span>
+                            @if(!empty($rating->tanggapan))
+                                <span class="text-[9px] font-black uppercase text-emerald-600 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 rounded-lg">Ditanggapi</span>
                             @else
-                                <span class="text-[9px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-1 rounded-lg">Pending</span>
+                                <span class="text-[9px] font-black uppercase text-amber-600 bg-amber-50 dark:bg-amber-900/30 px-2.5 py-1 rounded-lg">Pending</span>
                             @endif
                         </td>
                         <td class="px-8 py-5 text-center">
-                            {{-- Tombol Pemicu AJAX --}}
+                            {{-- Tombol Pemicu AJAX ke modal detail & balas --}}
                             <button type="button" 
                                     onclick="loadDetailRating('{{ route('pimpinan.rating.show', $rating->id_rating) }}')"
-                                    class="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center hover:bg-emerald-100 transition-all">
-                                <i class="fas fa-eye text-[#046A38]"></i>
+                                    class="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900 flex items-center justify-center hover:bg-emerald-100 dark:hover:bg-slate-700 transition-all mx-auto">
+                                <i class="fas fa-eye text-[#046A38] dark:text-emerald-400"></i>
                             </button>
                         </td>
                     </tr>
@@ -109,8 +113,8 @@
 <div id="modalDetailRating" class="fixed inset-0 z-50 hidden overflow-y-auto">
     <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="closeModal()"></div>
     <div class="flex min-h-full items-center justify-center p-4">
-        <div id="modalContent" class="bg-white dark:bg-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl animate__animated animate__zoomIn animate__faster">
-            {{-- Konten disuntik via AJAX --}}
+        <div id="modalContent" class="bg-white dark:bg-slate-800 rounded-[2.5rem] w-full max-w-lg shadow-2xl animate__animated animate__zoomIn animate__faster relative z-10">
+            {{-- Konten detail ulasan dan form balasan disuntik via AJAX --}}
         </div>
     </div>
 </div>

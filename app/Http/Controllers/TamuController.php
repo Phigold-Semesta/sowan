@@ -349,7 +349,7 @@ class TamuController extends Controller
         }
     }
 
-    /**
+   /**
      * Tampilan halaman Rating dan Saran
      */
     public function ratingIndex()
@@ -360,10 +360,11 @@ class TamuController extends Controller
             return redirect()->route('tamu.login.view')->with('error', 'Sesi Anda telah berakhir.');
         }
 
-        // Ambil data rating yang pernah diberikan oleh tamu ini
+        // Ambil seluruh riwayat data rating yang pernah diberikan oleh tamu ini agar tampil lengkap ke bawah
         $rating = DB::table('rating_layanan')
                     ->join('kunjungan', 'rating_layanan.id_kunjungan', '=', 'kunjungan.id_kunjungan')
                     ->where('kunjungan.gmail', $tamu->gmail)
+                    ->select('rating_layanan.*', 'kunjungan.waktu_masuk')
                     ->orderBy('rating_layanan.created_at', 'desc')
                     ->get();
 
@@ -371,18 +372,48 @@ class TamuController extends Controller
     }
 
     /**
-     * Menyimpan Rating dan Saran baru
+     * Menyimpan Rating dan Saran baru (Selalu membuat entri baru agar riwayat ulasan tidak tertimpa)
      */
     public function simpanRating(Request $request)
     {
+        $tamu = Auth::guard('tamu')->user();
+
+        if (!$tamu) {
+            return redirect()->route('tamu.login.view')->with('error', 'Sesi Anda telah berakhir.');
+        }
+
         $validated = $request->validate([
-            'id_kunjungan' => 'required|exists:kunjungan,id_kunjungan',
+            'id_kunjungan' => 'nullable|exists:kunjungan,id_kunjungan',
             'skor'         => 'required|integer|min:1|max:5',
             'komentar'     => 'nullable|string',
         ]);
 
+        $idKunjungan = $validated['id_kunjungan'] ?? null;
+
+        if (!$idKunjungan) {
+            $layananDefault = Layanan::first();
+            $petugasDefault = PetugasTujuan::first();
+
+            // Hitung nomor antrean harian secara otomatis
+            $tanggalHariIni = now()->format('Y-m-d');
+            $antreanTerakhir = Kunjungan::whereDate('waktu_masuk', $tanggalHariIni)->max('nomor_antrean') ?? 0;
+
+            // Buat entri kunjungan baru khusus untuk setiap pengiriman rating/feedback agar riwayat bertambah terus
+            $kunjunganBaru = Kunjungan::create([
+                'gmail'         => $tamu->gmail,
+                'id_layanan'    => $layananDefault ? $layananDefault->id_layanan : 1,
+                'id_petugas'    => $petugasDefault ? $petugasDefault->id_petugas : 1,
+                'waktu_masuk'   => now(),
+                'nomor_antrean' => $antreanTerakhir + 1,
+                'status'        => 'Belum Dilayani',
+            ]);
+
+            $idKunjungan = $kunjunganBaru->id_kunjungan;
+        }
+
+        // Simpan sebagai data baru (insert) agar riwayat penilaian sebelumnya tetap tampil tersusun ke bawah
         DB::table('rating_layanan')->insert([
-            'id_kunjungan' => $validated['id_kunjungan'],
+            'id_kunjungan' => $idKunjungan,
             'skor'         => $validated['skor'],
             'komentar'     => $validated['komentar'] ?? null,
             'created_at'   => now(),

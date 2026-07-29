@@ -79,7 +79,7 @@
             </div>
             
             <div class="text-[10px] font-bold text-slate-400 text-right min-w-[100px]">
-                {{ $item->created_at->format('d M Y') }}
+                {{ \Carbon\Carbon::parse($item->created_at)->format('d M Y') }}
             </div>
         </div>
         @empty
