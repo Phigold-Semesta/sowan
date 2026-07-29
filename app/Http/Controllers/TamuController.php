@@ -277,7 +277,7 @@ class TamuController extends Controller
             'nama_instansi' => 'nullable|string',
             'alamat_kantor' => 'nullable|string',
             'hadir_sebagai' => 'nullable|string',
-            'tipe_tamu'     => 'nullable|string', // Validasi opsional untuk tipe_tamu
+            'jenis_tamu' => 'nullable|in:penyedia,non-penyedia', // Validasi opsional untuk jenis_tamu
         ]);
 
         try {

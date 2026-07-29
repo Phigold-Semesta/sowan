@@ -186,12 +186,12 @@
                                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border-l-4 border-[#FFF200]">
                                         <label class="block text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Kritik, Ulasan, atau Saran Tamu:</label>
                                         <p class="text-slate-700 dark:text-slate-300 text-xs font-bold italic leading-relaxed">
-                                            "{{ $rating->saran ?? 'Tamu tidak memberikan ulasan teks tertulis (Hanya memberikan rating bintang).' }}"
+                                            "{{ $rating->komentar ?? 'Tamu tidak memberikan ulasan teks tertulis (Hanya memberikan rating bintang).' }}"
                                         </p>
                                     </div>
 
                                     {{-- Form Tanggapan Petugas --}}
-                                    <form action="{{ route('petugas.rating.tanggapan', $rating->id_rating ?? 1) }}" method="POST" class="space-y-4">
+                                    <form action="{{ route('admin.rating.tanggapan', $rating->id_rating ?? 1) }}" method="POST" class="space-y-4">
                                         @csrf
                                         <div class="space-y-2">
                                             <label class="block text-slate-700 dark:text-slate-300 text-xs font-black uppercase tracking-tight">Kirim Tanggapan / Tindak Lanjut Petugas:</label>
