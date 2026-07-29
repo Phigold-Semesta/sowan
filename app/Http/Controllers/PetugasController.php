@@ -60,13 +60,12 @@ class PetugasController extends Controller
     /**
      * Menampilkan daftar monitoring tamu.
      */
-    public function index(Request $request)
+   public function index(Request $request)
     {
-        $today = Carbon::today();
-
-        $countMenunggu = Kunjungan::whereDate('waktu_masuk', $today)->where('status', 'Belum Dilayani')->count();
-        $countDiproses = Kunjungan::whereDate('waktu_masuk', $today)->where('status', 'Sedang Dilayani')->count();
-        $countSelesai  = Kunjungan::whereDate('waktu_masuk', $today)->where('status', 'Sudah Dilayani')->count();
+        // PERBAIKAN: Gunakan whereIn agar kartu statistik membaca kedua variasi kata 'selesai' dengan akurat
+        $countMenunggu = Kunjungan::where('status', 'Belum Dilayani')->count();
+        $countDiproses = Kunjungan::where('status', 'Sedang Dilayani')->count();
+        $countSelesai  = Kunjungan::whereIn('status', ['Sudah Dilayani', 'Selesai Dilayani'])->count();
 
         $perPage = $request->input('per_page', 10); 
         $query = Kunjungan::with(['tamu', 'layanan', 'petugas']);
@@ -89,12 +88,19 @@ class PetugasController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            // Jika user memfilter 'Selesai Dilayani', tangkap juga variasi 'Sudah Dilayani' agar data lama tetap muncul
+            if ($request->status === 'Selesai Dilayani' || $request->status === 'Sudah Dilayani') {
+                $query->whereIn('status', ['Sudah Dilayani', 'Selesai Dilayani']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         $totalData = Kunjungan::count();
-        $kunjungans = $query->orderByRaw("FIELD(status, 'Sedang Dilayani', 'Belum Dilayani', 'Sudah Dilayani')")
-                            ->latest('waktu_masuk')
+        $totalData = $totalData > 0 ? $totalData : 1;
+        
+        // Data diurutkan berdasarkan waktu masuk terbaru, TIDAK ADA yang disembunyikan/dihapus
+        $kunjungans = $query->latest('waktu_masuk')
                             ->paginate($perPage == 'all' ? $totalData : $perPage)
                             ->withQueryString();
 
@@ -105,7 +111,6 @@ class PetugasController extends Controller
             'countSelesai'
         ));
     }
-
     /**
      * FITUR LAPORAN KUNJUNGAN
      */
@@ -205,6 +210,9 @@ class PetugasController extends Controller
     /**
      * SIMPAN REGISTRASI MANUAL
      */
+   /**
+     * SIMPAN REGISTRASI MANUAL
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -231,18 +239,23 @@ class PetugasController extends Controller
                 ]
             );
 
+            // PERBAIKAN: Hitung nomor antrean otomatis berdasarkan tanggal hari ini
+            $tanggalHariIni = now()->format('Y-m-d');
+            $antreanTerakhir = Kunjungan::whereDate('waktu_masuk', $tanggalHariIni)->max('nomor_antrean') ?? 0;
+
             $kunjungan = Kunjungan::create([
-                'gmail'       => $tamu->gmail,
-                'id_layanan'  => $validated['id_layanan'],
-                'id_petugas'  => Auth::id(), 
-                'waktu_masuk' => now(),
-                'status'      => 'Belum Dilayani',
-                'keperluan'   => $validated['keperluan'],
+                'gmail'         => $tamu->gmail,
+                'id_layanan'    => $validated['id_layanan'],
+                'id_petugas'    => Auth::id(), 
+                'waktu_masuk'   => now(),
+                'status'        => 'Belum Dilayani',
+                'keperluan'     => $validated['keperluan'],
+                'nomor_antrean' => $antreanTerakhir + 1, // <-- Otomatis berurutan mulai dari 1, 2, dst.
             ]);
 
             AuditLog::create([
                 'id_user'    => Auth::id(),
-                'aktivitas'  => "Mendaftarkan tamu manual: {$tamu->nama_tamu} (ID Kunjungan: {$kunjungan->id_kunjungan})",
+                'aktivitas'  => "Mendaftarkan tamu manual: {$tamu->nama_tamu} (ID Kunjungan: {$kunjungan->id_kunjungan}, No. Antrean: {$kunjungan->nomor_antrean})",
                 'waktu'      => now(),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
@@ -258,33 +271,51 @@ class PetugasController extends Controller
         }
     }
 
-    public function show(string|int $id)
-    {
-        $kunjungan = Kunjungan::with(['tamu', 'layanan', 'petugas'])->findOrFail($id);
-        return view('petugas.manajemen_tamu.show', compact('kunjungan'));
-    }
+ public function show(string|int $id)
+{
+    $kunjungan = Kunjungan::with(['tamu', 'layanan', 'petugas'])->findOrFail($id);
+    
+    // Ambil data tamu dari relasi kunjungan
+    $tamu = $kunjungan->tamu;
 
-    public function updateStatus(Request $request, string|int $id)
+    return view('petugas.manajemen_tamu.show', compact('kunjungan', 'tamu'));
+}
+
+  public function updateStatus(Request $request, string|int $id)
     {
+        // Validasi input mencakup semua kemungkinan format string dari modal/request
         $request->validate([
-            'status' => 'required|in:Belum Dilayani,Sedang Dilayani,Sudah Dilayani',
+            'status' => 'required|in:Belum Dilayani,Sedang Dilayani,Sudah Dilayani,Selesai Dilayani,belum dilayani,sedang dilayani,sudah dilayani,selesai dilayani',
         ]);
 
         try {
             $kunjungan = Kunjungan::findOrFail($id);
             $statusLama = $kunjungan->status;
             
-            $updateData = ['status' => $request->status];
+            // Normalisasi teks agar seragam menjadi Title Case
+            $rawStatus = ucwords(strtolower($request->status));
             
-            if ($request->status == 'Sudah Dilayani') {
+            // Standarisasi khusus: Jika mengandung kata 'Sudah' atau 'Selesai', tetapkan menjadi 'Sudah Dilayani' (menyesuaikan database)
+            if (str_contains(strtolower($rawStatus), 'sudah') || str_contains(strtolower($rawStatus), 'selesai')) {
+                $statusBaru = 'Sudah Dilayani';
+            } else {
+                $statusBaru = $rawStatus;
+            }
+            
+            $updateData = ['status' => $statusBaru];
+            
+            // Jika status selesai, catat waktu keluarnya. Jika dibatalkan ke proses/menunggu, kosongkan waktu keluar.
+            if ($statusBaru === 'Sudah Dilayani') {
                 $updateData['waktu_keluar'] = now();
+            } else {
+                $updateData['waktu_keluar'] = null; 
             }
 
             $kunjungan->update($updateData);
 
             AuditLog::create([
                 'id_user'    => Auth::id(),
-                'aktivitas'  => "Update status kunjungan ID #{$id}: [{$statusLama}] -> [{$request->status}]",
+                'aktivitas'  => "Update status kunjungan ID #{$id}: [{$statusLama}] -> [{$statusBaru}]",
                 'waktu'      => now(),
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),

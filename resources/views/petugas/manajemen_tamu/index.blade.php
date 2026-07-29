@@ -80,9 +80,9 @@
                     <select name="status" onchange="this.form.submit()"
                             class="w-full pl-10 pr-10 py-3.5 bg-slate-50 dark:bg-slate-900/50 border-0 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#008f5d]/20 dark:text-slate-200 appearance-none cursor-pointer">
                         <option value="">Semua Status</option>
-                        <option value="belum dilayani" {{ request('status') == 'belum dilayani' ? 'selected' : '' }}>Pending</option>
-                        <option value="sedang dilayani" {{ request('status') == 'sedang dilayani' ? 'selected' : '' }}>Diproses</option>
-                        <option value="sudah dilayani" {{ request('status') == 'sudah dilayani' ? 'selected' : '' }}>Selesai</option>
+                        <option value="Belum Dilayani" {{ request('status') == 'Belum Dilayani' ? 'selected' : '' }}>Pending</option>
+                        <option value="Sedang Dilayani" {{ request('status') == 'Sedang Dilayani' ? 'selected' : '' }}>Diproses</option>
+                        <option value="Sudah Dilayani" {{ request('status') == 'Sudah Dilayani' ? 'selected' : '' }}>Selesai</option>
                     </select>
                     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
                         <i class="fas fa-filter text-xs"></i>
@@ -303,8 +303,8 @@
         border-radius: 1.25rem !important;
         font-size: 10px !important;
         font-weight: 900 !important;
-        letter-spacing: 0.15em !important;
-        padding: 1rem 2rem !important;
+        letter-spacing: 0.1em !important;
+        padding: 0.875rem 2rem !important;
         box-shadow: 0 10px 25px -5px rgba(0, 143, 93, 0.4) !important;
     }
     .swal2-styled.swal2-cancel.sowan-cancel {
@@ -313,8 +313,8 @@
         border-radius: 1.25rem !important;
         font-size: 10px !important;
         font-weight: 900 !important;
-        letter-spacing: 0.15em !important;
-        padding: 1rem 2rem !important;
+        letter-spacing: 0.1em !important;
+        padding: 0.875rem 2rem !important;
     }
     .dark .swal2-styled.swal2-cancel.sowan-cancel {
         background-color: #1e293b !important;
@@ -333,9 +333,51 @@
     .dark .swal2-radio.custom-radio-group {
         background: #1e293b !important;
     }
+    /* Memperbesar ukuran radio button SweetAlert agar ideal */
+    .swal2-radio input {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+        accent-color: #008f5d !important;
+        cursor: pointer;
+    }
 </style>
 
 <script>
+    // Penanganan SweetAlert untuk Session Flash Success/Error dengan bentuk kotak konvensional dan tombol OK warna emerald
+    @if(session('success'))
+        Swal.fire({
+            title: 'BERHASIL!',
+            text: "{{ session('success') }}",
+            icon: 'success',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#008f5d',
+            background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b',
+            customClass: {
+                popup: 'sowan-swal shadow-2xl',
+                confirmButton: 'swal2-confirm sowan-confirm',
+                title: 'text-lg font-black tracking-tighter'
+            }
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            title: 'GAGAL!',
+            text: "{{ session('error') }}",
+            icon: 'error',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#ef4444',
+            background: document.documentElement.classList.contains('dark') ? '#0f172a' : '#ffffff',
+            color: document.documentElement.classList.contains('dark') ? '#f1f5f9' : '#1e293b',
+            customClass: {
+                popup: 'sowan-swal border-red-50 dark:border-red-900/20 shadow-2xl',
+                confirmButton: 'rounded-2xl font-black text-[10px] tracking-widest px-8 py-4 uppercase bg-red-600 hover:bg-red-700',
+                title: 'text-lg font-black tracking-tighter'
+            }
+        });
+    @endif
+
     function updateStatus(id, name, currentStatus) {
         const isDark = document.documentElement.classList.contains('dark');
         
@@ -359,9 +401,9 @@
             reverseButtons: true,
             input: 'radio',
             inputOptions: {
-                'belum dilayani': '⌛ Menunggu Antrean',
-                'sedang dilayani': '⚡ Sedang Dilayani',
-                'sudah dilayani': '✅ Selesai Dilayani'
+                'Belum Dilayani': '⌛ Menunggu Antrean',
+                'Sedang Dilayani': '⚡ Sedang Dilayani',
+                'Sudah Dilayani': '✅ Selesai Dilayani'
             },
             inputValue: currentStatus,
             customClass: {
