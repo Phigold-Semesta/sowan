@@ -73,7 +73,8 @@ Route::prefix('portal')->name('tamu.')->group(function () {
 Route::put('/konsultasi/{id}/update', [TamuController::class, 'updateKonsultasi'])->name('konsultasi_online.update');
 Route::delete('/konsultasi/{id}/hapus', [TamuController::class, 'hapusKonsultasi'])->name('konsultasi_online.hapus');
 
-
+Route::get('/live-chat/fetch', [LiveChatController::class, 'fetchMessagesTamu'])->name('chat.fetch');
+    Route::post('/live-chat/send', [LiveChatController::class, 'sendMessageTamu'])->name('chat.send');
     Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
     // --- TAMBAHAN: Rute Rating & Saran Tamu ---
         Route::get('/rating', [TamuController::class, 'ratingIndex'])->name('rating.index');
@@ -178,6 +179,8 @@ Route::middleware('auth')->group(function () {
             Route::post('/{id}/tanggapan', [PetugasController::class, 'ratingTanggapan'])->name('tanggapan');
         });
 
+Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
+
         // --- TAMBAHAN: FITUR KONSULTASI ONLINE PETUGAS ---
 Route::prefix('konsultasi')->name('konsultasi.')->group(function() {
     Route::get('/', [PetugasController::class, 'konsultasiIndex'])->name('index');
@@ -202,7 +205,7 @@ Route::post('/petugas/konsultasi/{id}/selesaikan', [PetugasController::class, 's
              ->parameters(['users' => 'user']);
 
              // Tambahkan baris ini di dalam file routes/web.php
-
+Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
 
         // --- MASTER DATA ---
         Route::prefix('master')->name('master.')->group(function() {
@@ -316,6 +319,18 @@ Route::post('/petugas/konsultasi/{id}/selesaikan', [PetugasController::class, 's
     Route::middleware(['role:pimpinan,administrator'])->group(function () {
         Route::get('/statistik', [TamuController::class, 'stats'])->name('statistik.index');
     });
+
+   
+   foreach (['administrator', 'petugas', 'pimpinan'] as $role) {
+    Route::middleware(['auth'])->prefix($role === 'administrator' ? 'admin' : $role)->name("$role.")->group(function () {
+        // Route AI Chat Assistant
+        Route::post('/ai-chat', [\App\Http\Controllers\ChatbotController::class, 'sendMessage'])->name('ai.chat');
+        
+        // Route Live Customer Service (CS)
+        Route::get('/chat-fetch', [\App\Http\Controllers\LiveChatController::class, 'fetchMessages'])->name('chat.fetch');
+        Route::post('/chat-send', [\App\Http\Controllers\LiveChatController::class, 'sendMessage'])->name('chat.send');
+    });
+}
 
    
 

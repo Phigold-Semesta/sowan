@@ -334,6 +334,259 @@
         </main>
     </div>
 
+    <!-- KONTAINER UTAMA 3 WIDGET MENGAMBANG (DENGAN URL PREFIX DINAMIS UNTUK ADMINISTRATOR/PETUGAS/PIMPINAN) -->
+    <div x-data="{ 
+        activeWidget: null,
+        rolePrefix: '{{ auth()->user()->role === "administrator" ? "admin" : auth()->user()->role }}',
+        
+        // AI State
+        messages: [
+            { sender: 'ai', text: 'Halo! Saya SOWAN AI Assistant siap membantu Anda seputar informasi layanan konsultasi dan pengadaan barang/jasa di LPSE Karawang. Ada yang bisa saya bantu?' }
+        ], 
+        userInput: '',
+        isTyping: false,
+        async sendMessage() {
+            if(this.userInput.trim() === '') return;
+            let question = this.userInput;
+            this.messages.push({ sender: 'user', text: question });
+            this.userInput = '';
+            this.isTyping = true;
+            setTimeout(() => { this.scrollToBottom(); }, 50);
+
+            try {
+                let response = await fetch('/' + this.rolePrefix + '/ai-chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+                    },
+                    body: JSON.stringify({ message: question })
+                });
+                let data = await response.json();
+                this.messages.push({ sender: 'ai', text: data.reply });
+            } catch (error) {
+                this.messages.push({ sender: 'ai', text: 'Maaf, terjadi kesalahan koneksi ke server SOWAN AI.' });
+            } finally {
+                this.isTyping = false;
+                setTimeout(() => { this.scrollToBottom(); }, 50);
+            }
+        },
+        scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            if(container) { container.scrollTop = container.scrollHeight; }
+        },
+
+        // CS State
+        messagesCS: [], 
+        inputCS: '',
+        initCS() {
+            this.fetchMessages();
+            setInterval(() => { if(this.activeWidget === 'cs') this.fetchMessages(); }, 3000);
+        },
+        async fetchMessages() {
+            try {
+                let res = await fetch('/' + this.rolePrefix + '/chat-fetch');
+                let data = await res.json();
+                this.messagesCS = data.messages;
+            } catch(e) {}
+        },
+        async sendCS() {
+            if(this.inputCS.trim() === '') return;
+            let msg = this.inputCS;
+            this.inputCS = '';
+            try {
+                await fetch('/' + this.rolePrefix + '/chat-send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+                    },
+                    body: JSON.stringify({ message: msg })
+                });
+                this.fetchMessages();
+                setTimeout(() => { this.scrollCS(); }, 50);
+            } catch(e) {}
+        },
+        scrollCS() {
+            const el = document.getElementById('cs-container');
+            if(el) el.scrollTop = el.scrollHeight;
+        }
+    }" x-init="initCS()" class="fixed bottom-6 right-6 z-[9999] flex flex-col-reverse items-end gap-3.5">
+
+        <!-- 1. WIDGET CHATBOT AI SOWAN ASSISTANT (Paling Bawah) -->
+        <div class="relative" x-show="activeWidget === null || activeWidget === 'ai'">
+            <button @click="activeWidget = activeWidget === 'ai' ? null : 'ai'" class="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-600 to-[#008f5d] text-white shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20" title="SOWAN AI Assistant">
+                <i class="fas fa-robot text-base group-hover:rotate-12 transition-transform" x-show="activeWidget !== 'ai'"></i>
+                <i class="fas fa-times text-base" x-show="activeWidget === 'ai'" x-cloak></i>
+                <span class="absolute top-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full animate-pulse" x-show="activeWidget !== 'ai'"></span>
+            </button>
+
+            <div x-show="activeWidget === 'ai'" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+                 x-cloak
+                 class="absolute bottom-full mb-3 right-0 w-[90vw] sm:w-[380px] h-[500px] bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-lg">
+                
+                <div class="bg-gradient-to-r from-[#008f5d] to-emerald-700 p-4 text-white flex items-center justify-between shrink-0 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white">
+                            <i class="fas fa-brain text-emerald-200"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-sm tracking-wide uppercase">SOWAN AI Assistant</h3>
+                            <span class="text-[10px] text-emerald-200 flex items-center gap-1 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online & Siap Membantu
+                            </span>
+                        </div>
+                    </div>
+                    <button @click="activeWidget = null" class="text-white/80 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+
+                <div id="chat-container" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-50/50 dark:bg-emerald-950/50 text-xs sm:text-sm">
+                    <template x-for="msg in messages">
+                        <div :class="msg.sender === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                            <div :class="msg.sender === 'user' ? 'bg-[#008f5d] text-white rounded-2xl rounded-tr-none' : 'bg-white dark:bg-emerald-800 text-slate-800 dark:text-emerald-50 border border-slate-100 dark:border-emerald-700 rounded-2xl rounded-tl-none shadow-sm'" 
+                                 class="p-3.5 max-w-[80%] leading-relaxed font-medium">
+                                <p x-text="msg.text" class="whitespace-pre-line"></p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <div x-show="isTyping" class="flex justify-start" x-cloak>
+                        <div class="bg-white dark:bg-emerald-800 border border-slate-100 dark:border-emerald-700 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-white dark:bg-emerald-900 border-t border-emerald-50 dark:border-emerald-800 shrink-0">
+                    <form @submit.prevent="sendMessage()" class="flex items-center gap-2">
+                        <input type="text" x-model="userInput" placeholder="Ketik pertanyaan seputar LPSE Karawang..." 
+                               class="flex-1 bg-slate-100 dark:bg-emerald-950 border border-transparent focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-800 dark:text-emerald-50 text-xs sm:text-sm rounded-xl px-4 py-3 focus:outline-none transition-all">
+                        <button type="submit" class="w-11 h-11 rounded-xl bg-[#008f5d] hover:bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. WIDGET LIVE CUSTOMER SERVICE (CS) (Di Tengah) -->
+        <div class="relative" x-show="activeWidget === null || activeWidget === 'cs'">
+            <button @click="activeWidget = activeWidget === 'cs' ? null : 'cs'; if(activeWidget === 'cs') setTimeout(() => scrollCS(), 50)" class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20" title="Live Chat Customer Service">
+                <i class="fas fa-headset text-base group-hover:rotate-12 transition-transform" x-show="activeWidget !== 'cs'"></i>
+                <i class="fas fa-times text-base" x-show="activeWidget === 'cs'" x-cloak></i>
+            </button>
+
+            <div x-show="activeWidget === 'cs'" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+                 x-cloak
+                 class="absolute bottom-full mb-3 right-0 w-[90vw] sm:w-[380px] h-[480px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-lg">
+                
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-4 text-white flex items-center justify-between shrink-0 shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white">
+                            <i class="fas fa-user-shield text-blue-200"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-black text-sm tracking-wide uppercase">Live Customer Service</h3>
+                            <span class="text-[10px] text-blue-200 flex items-center gap-1 font-semibold">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Terhubung dengan Petugas
+                            </span>
+                        </div>
+                    </div>
+                    <button @click="activeWidget = null" class="text-white/80 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+
+                <div id="cs-container" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-50/50 dark:bg-slate-950/50 text-xs sm:text-sm">
+                    <div class="flex justify-start">
+                        <div class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none shadow-sm p-3.5 max-w-[80%] font-medium">
+                            <p>Halo! Selamat datang di Layanan Bantuan Live CS SOWAN LPSE Karawang. Ada kendala atau pertanyaan yang bisa dibantu oleh petugas kami?</p>
+                        </div>
+                    </div>
+                    <template x-for="chat in messagesCS">
+                        <div :class="chat.sender_type === '{{ auth()->user()->role }}' ? 'flex justify-end' : 'flex justify-start'">
+                            <div :class="chat.sender_type === '{{ auth()->user()->role }}' ? 'bg-blue-600 text-white rounded-2xl rounded-tr-none' : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none shadow-sm'" 
+                                 class="p-3.5 max-w-[80%] leading-relaxed font-medium">
+                                <p x-text="chat.message" class="whitespace-pre-line"></p>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 shrink-0">
+                    <form @submit.prevent="sendCS()" class="flex items-center gap-2">
+                        <input type="text" x-model="inputCS" placeholder="Ketik pesan ke petugas CS..." 
+                               class="flex-1 bg-slate-100 dark:bg-slate-950 border border-transparent focus:border-blue-500 text-slate-800 dark:text-slate-100 text-xs sm:text-sm rounded-xl px-4 py-3 focus:outline-none transition-all">
+                        <button type="submit" class="w-11 h-11 rounded-xl bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all">
+                            <i class="fas fa-paper-plane text-xs"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. WIDGET AKSESIBILITAS RAMAH DISABILITAS (Paling Atas di Kolom Kanan) -->
+        <div class="relative" x-show="activeWidget === null || activeWidget === 'a11y'">
+            <button @click="activeWidget = activeWidget === 'a11y' ? null : 'a11y'" class="w-12 h-12 rounded-full bg-slate-800 dark:bg-emerald-700 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20" title="Menu Aksesibilitas Disabilitas">
+                <i class="fas fa-universal-access text-base group-hover:rotate-45 transition-transform" x-show="activeWidget !== 'a11y'"></i>
+                <i class="fas fa-times text-base" x-show="activeWidget === 'a11y'" x-cloak></i>
+            </button>
+
+            <div id="a11y-panel" x-show="activeWidget === 'a11y'" class="absolute bottom-full mb-3 right-0 w-80 bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl p-4 flex flex-col gap-3 backdrop-blur-lg">
+                <div class="flex items-center justify-between border-b border-slate-100 dark:border-emerald-800 pb-2">
+                    <span class="font-black text-xs uppercase tracking-wider text-slate-700 dark:text-emerald-100 flex items-center gap-2">
+                        <i class="fas fa-universal-access text-emerald-600 dark:text-emerald-400"></i> Aksesibilitas Ramah Disabilitas
+                    </span>
+                    <button @click="activeWidget = null" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="flex flex-col gap-2 text-xs max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+                    <button onclick="toggleTextSize()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                        <span>Perbesar Teks (Zoom)</span>
+                        <i class="fas fa-text-height"></i>
+                    </button>
+                    <button onclick="toggleContrast()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                        <span>Kontras Tinggi & Monokrom</span>
+                        <i class="fas fa-adjust"></i>
+                    </button>
+                    <button onclick="toggleLineSpacing()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                        <span>Spasi Baris Lebih Luas</span>
+                        <i class="fas fa-arrows-alt-v"></i>
+                    </button>
+                    <button onclick="toggleHighlightLinks()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                        <span>Sorot & Garisbawahi Tautan</span>
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button onclick="toggleDyslexiaFont()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                        <span>Font Ramah Disleksia</span>
+                        <i class="fas fa-font"></i>
+                    </button>
+                    <button onclick="resetA11y()" class="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 transition-colors font-bold mt-1">
+                        <i class="fas fa-undo text-[10px]"></i> Reset Pengaturan
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
     <script>
         function toggleMobileSidebar() {
             const sidebar = document.getElementById('main-sidebar');
@@ -369,6 +622,68 @@
                     document.getElementById('logout-form').submit();
                 }
             });
+        }
+
+        let isLargeText = false;
+        let isHighContrast = false;
+        let isLineSpacing = false;
+        let isHighlightLinks = false;
+        let isDyslexiaFont = false;
+
+        function toggleA11yPanel() {
+            const panel = document.getElementById('a11y-panel');
+            if(panel) panel.classList.toggle('hidden');
+        }
+
+        function toggleTextSize() {
+            isLargeText = !isLargeText;
+            document.body.style.fontSize = isLargeText ? '1.18rem' : '1rem';
+        }
+
+        function toggleContrast() {
+            isHighContrast = !isHighContrast;
+            if(isHighContrast) {
+                document.documentElement.classList.add('contrast-more', 'grayscale');
+            } else {
+                document.documentElement.classList.remove('contrast-more', 'grayscale');
+            }
+        }
+
+        function toggleLineSpacing() {
+            isLineSpacing = !isLineSpacing;
+            document.body.style.lineHeight = isLineSpacing ? '2.2' : '1.5';
+        }
+
+        function toggleHighlightLinks() {
+            isHighlightLinks = !isHighlightLinks;
+            if(isHighlightLinks) {
+                const style = document.createElement('style');
+                style.id = 'a11y-link-style';
+                style.innerHTML = 'a { text-decoration: underline !important; font-weight: bold !important; color: #047857 !important; }';
+                document.head.appendChild(style);
+            } else {
+                const el = document.getElementById('a11y-link-style');
+                if(el) el.remove();
+            }
+        }
+
+        function toggleDyslexiaFont() {
+            isDyslexiaFont = !isDyslexiaFont;
+            document.body.style.fontFamily = isDyslexiaFont ? 'Comic Sans MS, Arial, sans-serif' : "'Plus Jakarta Sans', sans-serif";
+        }
+
+        function resetA11y() {
+            isLargeText = false;
+            isHighContrast = false;
+            isLineSpacing = false;
+            isHighlightLinks = false;
+            isDyslexiaFont = false;
+            document.documentElement.classList.remove('contrast-more', 'grayscale');
+            document.body.style.fontSize = '1rem';
+            document.body.style.lineHeight = '1.5';
+            document.body.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+            const el = document.getElementById('a11y-link-style');
+            if(el) el.remove();
         }
 
         document.addEventListener('DOMContentLoaded', function() {
