@@ -168,6 +168,117 @@
         </main>
     </div>
 
+    <!-- WIDGET CHATBOT AI SOWAN ASSISTANT -->
+    <div x-data="{ 
+        isOpen: false, 
+        messages: [
+            { sender: 'ai', text: 'Halo! Saya SOWAN AI Assistant siap membantu Anda seputar informasi layanan konsultasi dan pengadaan barang/jasa di LPSE Karawang. Ada yang bisa saya bantu?' }
+        ], 
+        userInput: '',
+        isTyping: false,
+        sendMessage() {
+            if(this.userInput.trim() === '') return;
+            
+            this.messages.push({ sender: 'user', text: this.userInput });
+            let question = this.userInput;
+            this.userInput = '';
+            this.isTyping = true;
+            
+            setTimeout(() => { this.scrollToBottom(); }, 50);
+
+            setTimeout(() => {
+                let reply = 'Maaf, untuk saat ini saya sedang dalam mode simulasi cerdas. Pertanyaan Anda mengenai ' + question + ' akan segera diintegrasikan dengan database pusat LPSE Karawang.';
+                
+                let qLower = question.toLowerCase();
+                if(qLower.includes('jadwal') || qLower.includes('jam')) {
+                    reply = 'Jam operasional layanan LPSE Kabupaten Karawang adalah Senin s.d. Kamis pukul 08.00 - 15.00 WIB dan Jumat pukul 08.00 - 15.30 WIB.';
+                } else if(qLower.includes('e-katalog') || qLower.includes('dokumen')) {
+                    reply = 'Anda dapat mengunduh seluruh dokumen panduan teknis seperti E-Katalog dan SIKAP secara langsung melalui menu akses satu pintu di platform SOWAN ini.';
+                } else if(qLower.includes('konsultasi') || qLower.includes('online')) {
+                    reply = 'Konsultasi online dapat dilakukan melalui menu Konsultasi Online yang terhubung langsung dengan Google Meet di dalam sistem SOWAN.';
+                }
+
+                this.messages.push({ sender: 'ai', text: reply });
+                this.isTyping = false;
+                setTimeout(() => { this.scrollToBottom(); }, 50);
+            }, 1000);
+        },
+        scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            if(container) { container.scrollTop = container.scrollHeight; }
+        }
+    }" class="fixed bottom-6 right-6 z-[9999]">
+
+        <!-- Tombol Mengambang (Floating Action Button) -->
+        <button @click="isOpen = !isOpen" class="w-14 h-14 rounded-full bg-gradient-to-br from-emerald-600 to-[#008f5d] text-white shadow-2xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20">
+            <i class="fas fa-robot text-xl group-hover:rotate-12 transition-transform" x-show="!isOpen"></i>
+            <i class="fas fa-times text-xl" x-show="isOpen" x-cloak></i>
+            <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full animate-pulse"></span>
+        </button>
+
+        <!-- Kotak Jendela Chatbot (Popup Window) -->
+        <div x-show="isOpen" 
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             x-cloak
+             class="absolute bottom-20 right-0 w-[90vw] sm:w-[380px] h-[500px] bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-lg">
+            
+            <!-- Header Chatbot -->
+            <div class="bg-gradient-to-r from-[#008f5d] to-emerald-700 p-4 text-white flex items-center justify-between shrink-0 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white">
+                        <i class="fas fa-brain text-emerald-200"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-sm tracking-wide uppercase">SOWAN AI Assistant</h3>
+                        <span class="text-[10px] text-emerald-200 flex items-center gap-1 font-semibold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Online & Siap Membantu
+                        </span>
+                    </div>
+                </div>
+                <button @click="isOpen = false" class="text-white/80 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+
+            <!-- Area Riwayat Pesan -->
+            <div id="chat-container" class="flex-1 p-4 overflow-y-auto custom-scrollbar space-y-3 bg-slate-50/50 dark:bg-emerald-950/50 text-xs sm:text-sm">
+                <template x-for="msg in messages">
+                    <div :class="msg.sender === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                        <div :class="msg.sender === 'user' ? 'bg-[#008f5d] text-white rounded-2xl rounded-tr-none' : 'bg-white dark:bg-emerald-800 text-slate-800 dark:text-emerald-50 border border-slate-100 dark:border-emerald-700 rounded-2xl rounded-tl-none shadow-sm'" 
+                             class="p-3.5 max-w-[80%] leading-relaxed font-medium">
+                            <p x-text="msg.text"></p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Animasi Mengetik -->
+                <div x-show="isTyping" class="flex justify-start" x-cloak>
+                    <div class="bg-white dark:bg-emerald-800 border border-slate-100 dark:border-emerald-700 p-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-1.5">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce"></span>
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.2s]"></span>
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Input Pesan -->
+            <div class="p-3 bg-white dark:bg-emerald-900 border-t border-emerald-50 dark:border-emerald-800 shrink-0">
+                <form @submit.prevent="sendMessage()" class="flex items-center gap-2">
+                    <input type="text" x-model="userInput" placeholder="Ketik pertanyaan seputar LPSE Karawang..." 
+                           class="flex-1 bg-slate-100 dark:bg-emerald-950 border border-transparent focus:border-emerald-500 dark:focus:border-emerald-400 text-slate-800 dark:text-emerald-50 text-xs sm:text-sm rounded-xl px-4 py-3 focus:outline-none transition-all">
+                    <button type="submit" class="w-11 h-11 rounded-xl bg-[#008f5d] hover:bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-md active:scale-95 transition-all">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
         function toggleMobileSidebar() { 
             const sidebar = document.getElementById('main-sidebar'); 
@@ -175,7 +286,6 @@
             document.getElementById('sidebar-overlay').classList.toggle('hidden'); 
         }
 
-        // Fungsi baru untuk mengunci sidebar saat tombol hamburger desktop diklik
         function toggleDesktopSidebar() {
             const sidebar = document.getElementById('main-sidebar');
             sidebar.classList.toggle('desktop-expanded');
