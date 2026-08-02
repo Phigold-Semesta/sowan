@@ -168,7 +168,52 @@
         </main>
     </div>
 
-    <!-- WIDGET CHATBOT AI SOWAN ASSISTANT -->
+    <!-- WIDGET AKSESIBILITAS RAMAH DISABILITAS (VANILLA JS ROBUST TOGGLE) -->
+    <div class="fixed bottom-24 right-6 z-[9999]">
+        <!-- Tombol Mengambang Aksesibilitas -->
+        <button onclick="toggleA11yPanel()" class="w-12 h-12 rounded-full bg-slate-800 dark:bg-emerald-700 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20" title="Menu Aksesibilitas Disabilitas">
+            <i class="fas fa-universal-access text-lg group-hover:rotate-45 transition-transform"></i>
+        </button>
+
+        <!-- Panel Aksesibilitas Lengkap (Default Hidden) -->
+        <div id="a11y-panel" class="hidden absolute bottom-16 right-0 w-80 bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl p-4 flex flex-col gap-3 backdrop-blur-lg">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-emerald-800 pb-2">
+                <span class="font-black text-xs uppercase tracking-wider text-slate-700 dark:text-emerald-100 flex items-center gap-2">
+                    <i class="fas fa-universal-access text-emerald-600 dark:text-emerald-400"></i> Aksesibilitas Ramah Disabilitas
+                </span>
+                <button onclick="toggleA11yPanel()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="flex flex-col gap-2 text-xs max-h-[320px] overflow-y-auto custom-scrollbar pr-1">
+                <button onclick="toggleTextSize()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                    <span>Perbesar Teks (Zoom)</span>
+                    <i class="fas fa-text-height"></i>
+                </button>
+                <button onclick="toggleContrast()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                    <span>Kontras Tinggi & Monokrom</span>
+                    <i class="fas fa-adjust"></i>
+                </button>
+                <button onclick="toggleLineSpacing()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                    <span>Spasi Baris Lebih Luas</span>
+                    <i class="fas fa-arrows-alt-v"></i>
+                </button>
+                <button onclick="toggleHighlightLinks()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                    <span>Sorot & Garisbawahi Tautan</span>
+                    <i class="fas fa-link"></i>
+                </button>
+                <button onclick="toggleDyslexiaFont()" class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-emerald-800 text-slate-700 dark:text-emerald-50 hover:bg-emerald-50 dark:hover:bg-emerald-700 transition-colors font-semibold">
+                    <span>Font Ramah Disleksia</span>
+                    <i class="fas fa-font"></i>
+                </button>
+                <button onclick="resetA11y()" class="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/40 dark:text-red-400 transition-colors font-bold mt-1">
+                    <i class="fas fa-undo text-[10px]"></i> Reset Pengaturan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- WIDGET CHATBOT AI SOWAN ASSISTANT (CONNECTED TO GEMINI API) -->
     <div x-data="{ 
         isOpen: false, 
         messages: [
@@ -176,32 +221,34 @@
         ], 
         userInput: '',
         isTyping: false,
-        sendMessage() {
+        async sendMessage() {
             if(this.userInput.trim() === '') return;
             
-            this.messages.push({ sender: 'user', text: this.userInput });
             let question = this.userInput;
+            this.messages.push({ sender: 'user', text: question });
             this.userInput = '';
             this.isTyping = true;
             
             setTimeout(() => { this.scrollToBottom(); }, 50);
 
-            setTimeout(() => {
-                let reply = 'Maaf, untuk saat ini saya sedang dalam mode simulasi cerdas. Pertanyaan Anda mengenai ' + question + ' akan segera diintegrasikan dengan database pusat LPSE Karawang.';
-                
-                let qLower = question.toLowerCase();
-                if(qLower.includes('jadwal') || qLower.includes('jam')) {
-                    reply = 'Jam operasional layanan LPSE Kabupaten Karawang adalah Senin s.d. Kamis pukul 08.00 - 15.00 WIB dan Jumat pukul 08.00 - 15.30 WIB.';
-                } else if(qLower.includes('e-katalog') || qLower.includes('dokumen')) {
-                    reply = 'Anda dapat mengunduh seluruh dokumen panduan teknis seperti E-Katalog dan SIKAP secara langsung melalui menu akses satu pintu di platform SOWAN ini.';
-                } else if(qLower.includes('konsultasi') || qLower.includes('online')) {
-                    reply = 'Konsultasi online dapat dilakukan melalui menu Konsultasi Online yang terhubung langsung dengan Google Meet di dalam sistem SOWAN.';
-                }
+            try {
+                let response = await fetch('{{ route('tamu.ai.chat') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=\'csrf-token\']').getAttribute('content')
+                    },
+                    body: JSON.stringify({ message: question })
+                });
 
-                this.messages.push({ sender: 'ai', text: reply });
+                let data = await response.json();
+                this.messages.push({ sender: 'ai', text: data.reply });
+            } catch (error) {
+                this.messages.push({ sender: 'ai', text: 'Maaf, terjadi kesalahan koneksi ke server SOWAN AI.' });
+            } finally {
                 this.isTyping = false;
                 setTimeout(() => { this.scrollToBottom(); }, 50);
-            }, 1000);
+            }
         },
         scrollToBottom() {
             const container = document.getElementById('chat-container');
@@ -251,7 +298,7 @@
                     <div :class="msg.sender === 'user' ? 'flex justify-end' : 'flex justify-start'">
                         <div :class="msg.sender === 'user' ? 'bg-[#008f5d] text-white rounded-2xl rounded-tr-none' : 'bg-white dark:bg-emerald-800 text-slate-800 dark:text-emerald-50 border border-slate-100 dark:border-emerald-700 rounded-2xl rounded-tl-none shadow-sm'" 
                              class="p-3.5 max-w-[80%] leading-relaxed font-medium">
-                            <p x-text="msg.text"></p>
+                            <p x-text="msg.text" class="whitespace-pre-line"></p>
                         </div>
                     </div>
                 </template>
@@ -305,6 +352,69 @@
                     document.getElementById('logout-form').submit();
                 }
             }); 
+        }
+
+        // --- SKRIP PENDUKUNG WIDGET AKSESIBILITAS RAMAH DISABILITAS ---
+        let isLargeText = false;
+        let isHighContrast = false;
+        let isLineSpacing = false;
+        let isHighlightLinks = false;
+        let isDyslexiaFont = false;
+
+        function toggleA11yPanel() {
+            const panel = document.getElementById('a11y-panel');
+            panel.classList.toggle('hidden');
+        }
+
+        function toggleTextSize() {
+            isLargeText = !isLargeText;
+            document.body.style.fontSize = isLargeText ? '1.18rem' : '1rem';
+        }
+
+        function toggleContrast() {
+            isHighContrast = !isHighContrast;
+            if(isHighContrast) {
+                document.documentElement.classList.add('contrast-more', 'grayscale');
+            } else {
+                document.documentElement.classList.remove('contrast-more', 'grayscale');
+            }
+        }
+
+        function toggleLineSpacing() {
+            isLineSpacing = !isLineSpacing;
+            document.body.style.lineHeight = isLineSpacing ? '2.2' : '1.5';
+        }
+
+        function toggleHighlightLinks() {
+            isHighlightLinks = !isHighlightLinks;
+            if(isHighlightLinks) {
+                const style = document.createElement('style');
+                style.id = 'a11y-link-style';
+                style.innerHTML = 'a { text-decoration: underline !important; font-weight: bold !important; color: #047857 !important; }';
+                document.head.appendChild(style);
+            } else {
+                const el = document.getElementById('a11y-link-style');
+                if(el) el.remove();
+            }
+        }
+
+        function toggleDyslexiaFont() {
+            isDyslexiaFont = !isDyslexiaFont;
+            document.body.style.fontFamily = isDyslexiaFont ? 'Comic Sans MS, Arial, sans-serif' : "'Plus Jakarta Sans', sans-serif";
+        }
+
+        function resetA11y() {
+            isLargeText = false;
+            isHighContrast = false;
+            isLineSpacing = false;
+            isHighlightLinks = false;
+            isDyslexiaFont = false;
+            document.documentElement.classList.remove('contrast-more', 'grayscale');
+            document.body.style.fontSize = '1rem';
+            document.body.style.lineHeight = '1.5';
+            document.body.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+            const el = document.getElementById('a11y-link-style');
+            if(el) el.remove();
         }
     </script>
 </body>

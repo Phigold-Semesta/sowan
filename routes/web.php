@@ -14,6 +14,8 @@ use App\Http\Controllers\AdminController;
 
 use App\Http\Controllers\PimpinanController;
 
+ use App\Http\Controllers\ChatbotController;
+
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Auth;
@@ -72,6 +74,7 @@ Route::put('/konsultasi/{id}/update', [TamuController::class, 'updateKonsultasi'
 Route::delete('/konsultasi/{id}/hapus', [TamuController::class, 'hapusKonsultasi'])->name('konsultasi_online.hapus');
 
 
+    Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
     // --- TAMBAHAN: Rute Rating & Saran Tamu ---
         Route::get('/rating', [TamuController::class, 'ratingIndex'])->name('rating.index');
         Route::post('/rating-simpan', [TamuController::class, 'simpanRating'])->name('rating.simpan');
@@ -313,5 +316,8 @@ Route::post('/petugas/konsultasi/{id}/selesaikan', [PetugasController::class, 's
     Route::middleware(['role:pimpinan,administrator'])->group(function () {
         Route::get('/statistik', [TamuController::class, 'stats'])->name('statistik.index');
     });
+
+   
+
 
 });
