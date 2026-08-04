@@ -239,6 +239,10 @@
                         <i class="fas fa-fingerprint w-6 text-center text-sm"></i>
                         <span class="nav-text ml-3 text-sm font-bold tracking-wide text-nowrap">Aktivitas Global</span>
                     </a>
+                    <a href="{{ route('admin.chat.index') }}" class="nav-item flex items-center py-4 px-5 rounded-2xl transition-all {{ Route::is('admin.chat.*') ? 'sidebar-active' : 'hover:bg-white/10' }}">
+                        <i class="fas fa-headset w-6 text-center text-sm"></i>
+                        <span class="nav-text ml-3 text-sm font-bold tracking-wide text-nowrap">Live Chat CS</span>
+                    </a>
                     
                     <div class="menu-header px-4 py-3 text-[10px] font-black text-emerald-200/50 uppercase tracking-[0.2em] mt-4">Monitoring & Output</div>
                     <a href="{{ route('admin.rating.index') }}" class="nav-item flex items-center py-4 px-5 rounded-2xl transition-all {{ Route::is('admin.rating.*') ? 'sidebar-active' : 'hover:bg-white/10' }}">
@@ -338,7 +342,7 @@
     <div x-data="{ 
         activeWidget: null,
         rolePrefix: '{{ auth()->user()->role === "administrator" ? "admin" : auth()->user()->role }}',
-        
+         
         // AI State
         messages: [
             { sender: 'ai', text: 'Halo! Saya SOWAN AI Assistant siap membantu Anda seputar informasi layanan konsultasi dan pengadaan barang/jasa di LPSE Karawang. Ada yang bisa saya bantu?' }

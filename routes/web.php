@@ -16,6 +16,8 @@ use App\Http\Controllers\PimpinanController;
 
  use App\Http\Controllers\ChatbotController;
 
+use App\Http\Controllers\LiveChatController;
+
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Auth;
@@ -73,8 +75,8 @@ Route::prefix('portal')->name('tamu.')->group(function () {
 Route::put('/konsultasi/{id}/update', [TamuController::class, 'updateKonsultasi'])->name('konsultasi_online.update');
 Route::delete('/konsultasi/{id}/hapus', [TamuController::class, 'hapusKonsultasi'])->name('konsultasi_online.hapus');
 
-Route::get('/live-chat/fetch', [LiveChatController::class, 'fetchMessagesTamu'])->name('chat.fetch');
-    Route::post('/live-chat/send', [LiveChatController::class, 'sendMessageTamu'])->name('chat.send');
+Route::get('/tamu/chat-fetch', [LiveChatController::class, 'fetchTamu'])->name('chat.fetch');
+    Route::post('/tamu/chat-send', [LiveChatController::class, 'sendTamu'])->name('chat.send');
     Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
     // --- TAMBAHAN: Rute Rating & Saran Tamu ---
         Route::get('/rating', [TamuController::class, 'ratingIndex'])->name('rating.index');
@@ -204,9 +206,6 @@ Route::post('/petugas/konsultasi/{id}/selesaikan', [PetugasController::class, 's
         Route::resource('users', UserController::class)
              ->parameters(['users' => 'user']);
 
-             // Tambahkan baris ini di dalam file routes/web.php
-Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('ai.chat');
-
         // --- MASTER DATA ---
         Route::prefix('master')->name('master.')->group(function() {
             
@@ -266,6 +265,8 @@ Route::post('/sowan-ai/chat', [ChatbotController::class, 'sendMessage'])->name('
     Route::post('/{id}/proses', [AdminController::class, 'prosesKonsultasi'])->name('proses');
     Route::post('/{id}/selesaikan', [AdminController::class, 'selesaikanKonsultasi'])->name('selesaikan');
         });
+
+Route::get('/chat', [LiveChatController::class, 'indexAdmin'])->name('chat.index');
 
         // Monitoring Aktivitas Global (Audit Log)
         Route::prefix('aktivitas')->name('aktivitas.')->group(function() {
