@@ -10,6 +10,8 @@ use App\Http\Controllers\UserController;
 
 use App\Http\Controllers\PetugasController;
 
+use App\Http\Controllers\AiController;
+
 use App\Http\Controllers\AdminController;
 
 use App\Http\Controllers\PimpinanController;
@@ -192,6 +194,12 @@ Route::prefix('konsultasi')->name('konsultasi.')->group(function() {
     // Pastikan letaknya di dalam group 'petugas/konsultasi'
 Route::post('/{id}/proses', [PetugasController::class, 'prosesKeputusan'])->name('proses');
 });
+
+// --- TAMBAHAN RUTE AI SCANNER ---
+        Route::prefix('ai-scanner')->name('ai_scanner.')->group(function () {
+            Route::get('/kamera', [\App\Http\Controllers\AiController::class, 'kamera'])->name('kamera');
+            Route::post('/process', [\App\Http\Controllers\AiController::class, 'processAi'])->name('process');
+        });
 
 // Tambahkan ini di dalam group route petugas Anda
 Route::post('/petugas/konsultasi/{id}/selesaikan', [PetugasController::class, 'selesaikanKonsultasi'])->name('konsultasi.selesaikan');

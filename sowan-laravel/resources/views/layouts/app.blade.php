@@ -207,6 +207,17 @@
                         <i class="fas fa-user-check w-6 text-center text-sm"></i>
                         <span class="nav-text ml-3 text-sm font-bold tracking-wide text-nowrap">Data Tamu</span>
                     </a>
+
+<!-- MENU BARU: AI FACE SCANNER -->
+                    <a href="{{ route('petugas.ai_scanner.kamera') }}" class="nav-item flex items-center py-4 px-5 rounded-2xl transition-all {{ Route::is('petugas.ai_scanner.*') ? 'sidebar-active' : 'hover:bg-white/10' }}">
+                        <div class="relative w-6 text-center">
+                            <i class="fas fa-camera text-sm"></i>
+                            <span class="absolute -top-2 -right-3 bg-yellow-400 text-yellow-900 text-[8px] font-black px-1 rounded shadow-sm animate-pulse border border-yellow-500">AI</span>
+                        </div>
+                        <span class="nav-text ml-3 text-sm font-bold tracking-wide text-nowrap">AI Face Scanner</span>
+                    </a>
+                    <!-- END MENU BARU -->
+
                     <a href="{{ route('petugas.konsultasi.index') }}" class="nav-item flex items-center py-4 px-5 rounded-2xl transition-all {{ Route::is('petugas.konsultasi.*') ? 'sidebar-active' : 'hover:bg-white/10' }}">
                         <div class="relative w-6 text-center">
                             <i class="fas fa-video text-sm"></i>
