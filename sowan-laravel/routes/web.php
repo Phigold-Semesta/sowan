@@ -49,8 +49,8 @@ use Illuminate\Support\Facades\Auth;
 // --- 0. RUTE UTAMA (ROOT) ---
 // Memperbaiki masalah 404 saat akses localhost:8000/
 Route::get('/', function () {
-    return redirect()->route('tamu.onsite.view');
-});
+    return view('welcome');
+})->name('landing');
 
 // --- 2. PORTAL PUBLIK (Tamu Online) ---
 Route::prefix('portal')->name('tamu.')->group(function () {
