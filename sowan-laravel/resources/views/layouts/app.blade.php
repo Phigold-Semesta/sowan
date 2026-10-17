@@ -739,5 +739,8 @@
             @endif
         });
     </script>
+
+    <!-- DITAMBAHKAN: tempat script dari halaman yang memakai @push('scripts') (termasuk kamera AI) -->
+    @stack('scripts')
 </body>
 </html>

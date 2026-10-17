@@ -10,7 +10,7 @@
 }" @scroll.window="scrolledFromTop = (window.pageYOffset > 300)" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>LPSE Kabupaten Karawang</title>
     
@@ -85,15 +85,45 @@
             box-shadow: 0 20px 25px -5px rgba(4, 120, 87, 0.4), 0 8px 10px -6px rgba(4, 120, 87, 0.2);
         }
         .dark .layanan-card:hover .icon-box { border-color: rgba(255, 255, 255, 0.5); }
+
+        /* Motif Batik Emerald Green Mewah Khusus Hero Section (Sesuai Referensi) */
+        .batik-hero-bg {
+            background: url("{{ asset('img/batik_emerald_green.png') }}") no-repeat center center;
+            background-size: cover;
+            position: relative;
+        }
+        .luxury-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, rgba(6, 78, 59, 0.25) 0%, rgba(2, 44, 34, 0.90) 100%);
+            backdrop-filter: contrast(1.1) brightness(0.9);
+            z-index: 1;
+        }
+        .light-glow {
+            position: absolute; width: min(700px, 90vw); height: min(700px, 90vw);
+            background: rgba(52, 211, 153, 0.12);
+            filter: blur(130px); border-radius: 50%; z-index: 2;
+            animation: move 25s infinite alternate ease-in-out;
+        }
+        @keyframes move {
+            from { transform: translate(-20%, -20%); }
+            to { transform: translate(25%, 25%); }
+        }
+        .reveal-text {
+            display: inline-block;
+            animation: tracking-in-expand 0.8s cubic-bezier(0.215, 0.610, 0.355, 1.000) both;
+        }
+        @keyframes tracking-in-expand {
+            0% { letter-spacing: -0.2em; opacity: 0; }
+            40% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body class="antialiased text-slate-800 bg-[#f0f9f4] dark:bg-emerald-950 dark:text-emerald-50 min-h-screen flex flex-col relative overflow-x-hidden 2xl:text-lg">
 
-    <!-- Efek Cahaya Belakang (Glow) responsif besar untuk TV -->
-    <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] sm:w-[800px] sm:h-[800px] 2xl:w-[1200px] 2xl:h-[1200px] bg-[#008f5d]/20 dark:bg-[#008f5d]/30 rounded-full blur-[120px] 2xl:blur-[200px] pointer-events-none z-0"></div>
-
     <!-- NAVBAR ATAS -->
-    <nav class="w-full px-6 sm:px-12 2xl:px-24 py-4 2xl:py-6 flex justify-between items-center relative z-50 bg-white/60 dark:bg-emerald-950/60 backdrop-blur-xl border-b border-white/20 dark:border-emerald-800/50 sticky top-0 shadow-sm">
+    <nav class="w-full px-6 sm:px-12 2xl:px-24 py-4 2xl:py-6 flex justify-between items-center relative z-50 bg-white/80 dark:bg-emerald-950/80 backdrop-blur-xl border-b border-white/20 dark:border-emerald-800/50 sticky top-0 shadow-sm">
         
         <!-- Logo & Mobile Toggle -->
         <div class="flex items-center gap-4">
@@ -116,31 +146,33 @@
             </a>
         </div>
 
-        <!-- Menu Utama (Desktop) - Proporsional -->
-        <div class="hidden lg:flex items-center gap-6 xl:gap-8 2xl:gap-12 font-bold text-sm xl:text-base 2xl:text-lg text-slate-600 dark:text-emerald-100">
-            <a href="/" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Beranda</a>
-            <a href="#profil" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Profil</a>
-            <a href="#layanan" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Layanan</a>
-        
+        <!-- Wrapper untuk Menu Utama dan Kontrol Kanan menempel di kanan -->
+        <div class="flex items-center gap-6 xl:gap-8 2xl:gap-12">
             
-            <a href="#panduan" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Panduan</a>
-        </div>
+            <!-- Menu Utama (Desktop) -->
+            <div class="hidden lg:flex items-center gap-6 xl:gap-8 2xl:gap-12 font-bold text-sm xl:text-base 2xl:text-lg text-slate-600 dark:text-emerald-100">
+                <a href="/" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Beranda</a>
+                <a href="/profil" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Profil</a>
+                <a href="/layanan" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Layanan</a>
+                <a href="/panduan" class="hover:text-[#008f5d] dark:hover:text-emerald-400 transition-colors border-b-2 border-transparent hover:border-[#008f5d] dark:hover:border-emerald-400 py-2">Panduan</a>
+            </div>
 
-        <!-- Kontrol Kanan (Theme & Login) -->
-        <div class="flex items-center gap-4 2xl:gap-6">
-            <button @click="toggleTheme()" class="w-10 h-10 2xl:w-12 2xl:h-12 flex items-center justify-center rounded-xl bg-white dark:bg-emerald-800 text-slate-500 dark:text-yellow-400 border border-slate-200 dark:border-emerald-700 shadow-sm transition-all hover:scale-110">
-                <i x-show="darkMode" class="fa-solid fa-sun text-lg 2xl:text-xl" x-cloak></i>
-                <i x-show="!darkMode" class="fa-solid fa-moon text-lg 2xl:text-xl" x-cloak></i>
-            </button>
+            <!-- Kontrol Kanan (Theme & Login) -->
+            <div class="flex items-center gap-4 2xl:gap-6">
+                <button @click="toggleTheme()" class="w-10 h-10 2xl:w-12 2xl:h-12 flex items-center justify-center rounded-xl bg-white dark:bg-emerald-800 text-slate-500 dark:text-yellow-400 border border-slate-200 dark:border-emerald-700 shadow-sm transition-all hover:scale-110">
+                    <i x-show="darkMode" class="fa-solid fa-sun text-lg 2xl:text-xl" x-cloak></i>
+                    <i x-show="!darkMode" class="fa-solid fa-moon text-lg 2xl:text-xl" x-cloak></i>
+                </button>
 
-            <a href="{{ route('login') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 2xl:px-6 2xl:py-3 bg-white dark:bg-emerald-800 border border-slate-200 dark:border-emerald-700 text-slate-700 dark:text-emerald-50 rounded-xl font-bold text-sm 2xl:text-base shadow-sm hover:bg-slate-50 dark:hover:bg-emerald-700 transition-colors">
-                <i class="fas fa-lock text-[#008f5d] dark:text-emerald-400 text-xs 2xl:text-sm"></i>
-                Portal Petugas
-            </a>
-            
-            <a href="{{ route('login') }}" class="flex sm:hidden w-10 h-10 items-center justify-center bg-white dark:bg-emerald-800 border border-slate-200 dark:border-emerald-700 text-[#008f5d] dark:text-emerald-400 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-emerald-700 transition-colors">
-                <i class="fas fa-lock text-sm"></i>
-            </a>
+                <a href="{{ route('login') }}" class="hidden sm:flex items-center gap-2 px-5 py-2.5 2xl:px-6 2xl:py-3 bg-white dark:bg-emerald-800 border border-slate-200 dark:border-emerald-700 text-slate-700 dark:text-emerald-50 rounded-xl font-bold text-sm 2xl:text-base shadow-sm hover:bg-slate-50 dark:hover:bg-emerald-700 transition-colors">
+                    <i class="fas fa-lock text-[#008f5d] dark:text-emerald-400 text-xs 2xl:text-sm"></i>
+                    Portal Petugas
+                </a>
+                
+                <a href="{{ route('login') }}" class="flex sm:hidden w-10 h-10 items-center justify-center bg-white dark:bg-emerald-800 border border-slate-200 dark:border-emerald-700 text-[#008f5d] dark:text-emerald-400 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-emerald-700 transition-colors">
+                    <i class="fas fa-lock text-sm"></i>
+                </a>
+            </div>
         </div>
     </nav>
 
@@ -158,10 +190,10 @@
             <a href="/" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
                 <i class="fas fa-home w-5 text-center text-[#008f5d] dark:text-emerald-400"></i> Beranda
             </a>
-            <a href="#profil" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
+            <a href="/profil" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
                 <i class="fas fa-building w-5 text-center text-[#008f5d] dark:text-emerald-400"></i> Profil Instansi
             </a>
-            <a href="#layanan" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
+            <a href="/layanan" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
                 <i class="fas fa-concierge-bell w-5 text-center text-[#008f5d] dark:text-emerald-400"></i> Layanan Kami
             </a>
             <a href="#statistik" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
@@ -170,38 +202,42 @@
             <a href="#berita" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
                 <i class="fas fa-newspaper w-5 text-center text-[#008f5d] dark:text-emerald-400"></i> Berita & Info
             </a>
-            <a href="#panduan" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
+            <a href="/panduan" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-100 dark:hover:bg-emerald-900 transition-colors">
                 <i class="fas fa-book w-5 text-center text-[#008f5d] dark:text-emerald-400"></i> Buku Panduan
             </a>
         </div>
     </div>
 
-    <!-- 1. KONTEN UTAMA (HERO SECTION) -->
-    <main class="flex-grow flex items-center justify-center px-4 relative z-10 py-16 sm:py-24 2xl:py-32">
-        <div class="max-w-4xl lg:max-w-5xl 2xl:max-w-6xl text-center space-y-8 2xl:space-y-10">
+    <!-- 1. KONTEN UTAMA (HERO SECTION DENGAN MOTIF BATIK EMERALD GREEN MEWAH) -->
+    <main class="flex-grow flex items-center justify-center px-4 relative z-10 py-24 sm:py-32 2xl:py-40 batik-hero-bg overflow-hidden shadow-2xl">
+        <div class="luxury-overlay"></div>
+        <div class="light-glow top-0 left-0"></div>
+        <div class="light-glow bottom-0 right-0" style="animation-delay: -7s;"></div>
+
+        <div class="max-w-4xl lg:max-w-5xl 2xl:max-w-6xl text-center space-y-8 2xl:space-y-10 relative z-20">
             
-            <div class="inline-flex items-center gap-2 px-4 py-2 2xl:px-6 2xl:py-3 rounded-full bg-white/60 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs 2xl:text-sm font-bold text-[#008f5d] dark:text-emerald-400 tracking-widest uppercase mb-4 shadow-sm backdrop-blur-sm">
-                <span class="w-2 h-2 2xl:w-3 2xl:h-3 rounded-full bg-[#008f5d] dark:bg-emerald-500 animate-pulse"></span>
+            <div class="inline-flex items-center gap-2 px-4 py-2 2xl:px-6 2xl:py-3 rounded-full bg-white/10 dark:bg-emerald-900/60 border border-white/20 dark:border-emerald-700 text-xs 2xl:text-sm font-bold text-emerald-300 tracking-widest uppercase mb-4 shadow-sm backdrop-blur-md">
+                <span class="w-2 h-2 2xl:w-3 2xl:h-3 rounded-full bg-emerald-400 animate-pulse"></span>
                 Pemerintah Kabupaten Karawang
             </div>
 
-            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl 2xl:text-[5.5rem] font-black text-slate-800 dark:text-white tracking-tight leading-[1.15]">
+            <h1 class="text-4xl sm:text-5xl md:text-6xl lg:text-7xl 2xl:text-[5.5rem] font-black text-white tracking-tight leading-[1.15] drop-shadow-lg reveal-text">
                 Layanan Pengadaan <br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#008f5d] to-emerald-400 dark:from-emerald-400 dark:to-teal-200">
+                <span class="text-emerald-400">
                     Secara Elektronik (LPSE)
                 </span>
             </h1>
 
-            <p class="text-base md:text-lg 2xl:text-xl text-slate-600 dark:text-emerald-100/70 max-w-2xl 2xl:max-w-3xl mx-auto font-medium leading-relaxed">
+            <p class="text-base md:text-lg 2xl:text-xl text-emerald-100/90 max-w-2xl 2xl:max-w-3xl mx-auto font-medium leading-relaxed bg-white/5 dark:bg-emerald-950/40 p-6 rounded-3xl backdrop-blur-md border border-white/10 shadow-xl">
                 Mewujudkan sistem pengadaan barang dan jasa yang transparan, akuntabel, dan efisien di lingkungan Pemerintah Kabupaten Karawang melalui pemanfaatan teknologi informasi.
             </p>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 2xl:gap-6 pt-8 2xl:pt-12">
-                <a href="{{ route('tamu.onsite.view') }}" class="w-full sm:w-auto px-8 py-4 2xl:px-10 2xl:py-5 bg-[#008f5d] hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-[0_8px_20px_rgba(0,143,93,0.3)] hover:shadow-[0_12px_25px_rgba(0,143,93,0.4)] transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 text-lg 2xl:text-xl border border-emerald-500/20">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4 2xl:gap-6 pt-6 2xl:pt-10">
+                <a href="{{ route('tamu.onsite.view') }}" class="w-full sm:w-auto px-8 py-4 2xl:px-10 2xl:py-5 bg-emerald-400 hover:bg-emerald-300 text-emerald-950 rounded-2xl font-black shadow-[0_15px_40px_rgba(52,211,153,0.3)] transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 text-lg 2xl:text-xl tracking-[0.1em] uppercase">
                     <i class="fas fa-qrcode text-xl 2xl:text-2xl"></i>
-                    Buku Tamu Di Tempat
+                    Buku Tamu Onsite
                 </a>
-                <a href="{{ route('tamu.login.view') }}" class="w-full sm:w-auto px-8 py-4 2xl:px-10 2xl:py-5 bg-white dark:bg-emerald-900 border-2 border-[#008f5d] dark:border-emerald-700 text-[#008f5d] dark:text-emerald-400 rounded-2xl font-bold shadow-sm transform hover:-translate-y-1 hover:bg-emerald-50 dark:hover:bg-emerald-800 transition-all duration-300 flex items-center justify-center gap-3 text-lg 2xl:text-xl">
+                <a href="{{ route('tamu.login.view') }}" class="w-full sm:w-auto px-8 py-4 2xl:px-10 2xl:py-5 bg-white/10 hover:bg-white/20 border-2 border-emerald-400/50 text-white rounded-2xl font-black shadow-xl backdrop-blur-md transform hover:-translate-y-1 transition-all duration-300 flex items-center justify-center gap-3 text-lg 2xl:text-xl tracking-[0.1em] uppercase">
                     <i class="fas fa-calendar-alt text-xl 2xl:text-2xl"></i>
                     Konsultasi Online
                 </a>
@@ -210,7 +246,7 @@
     </main>
 
     <!-- 2. BAGIAN LAYANAN LPSE -->
-    <div id="layanan" class="relative z-10 max-w-7xl 2xl:max-w-screen-2xl mx-auto px-6 2xl:px-24 pb-20 2xl:pb-32 w-full">
+    <div id="layanan" class="relative z-10 max-w-7xl 2xl:max-w-screen-2xl mx-auto px-6 2xl:px-24 pt-20 pb-20 2xl:pb-32 w-full">
         <div class="text-center mb-12 2xl:mb-16">
             <h2 class="text-3xl 2xl:text-4xl font-black text-slate-800 dark:text-white uppercase tracking-tight">Layanan & Sistem Pengadaan</h2>
             <div class="w-24 h-1.5 2xl:w-32 2xl:h-2 bg-[#008f5d] mx-auto mt-4 rounded-full"></div>
@@ -307,7 +343,7 @@
         </div>
     </div>
 
-    <!-- 4. BAGIAN BERITA & PENGUMUMAN (Seperti SIRIDA) -->
+    <!-- 4. BAGIAN BERITA & PENGUMUMAN -->
     <div id="berita" class="relative z-10 max-w-7xl 2xl:max-w-screen-2xl mx-auto px-6 2xl:px-24 py-20 2xl:py-28 w-full">
         <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 2xl:mb-16 gap-6">
             <div>
@@ -323,7 +359,6 @@
             <!-- Berita 1 -->
             <div class="group bg-white dark:bg-emerald-900/40 rounded-3xl border border-slate-200 dark:border-emerald-800/50 overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col cursor-pointer hover:-translate-y-2">
                 <div class="h-48 2xl:h-64 bg-slate-200 dark:bg-emerald-800 relative overflow-hidden">
-                    <!-- Placeholder Gambar via CSS Gradient -->
                     <div class="absolute inset-0 bg-gradient-to-br from-emerald-400 to-[#008f5d] opacity-80 group-hover:scale-110 transition-transform duration-500"></div>
                     <div class="absolute inset-0 flex items-center justify-center text-white/50">
                         <i class="fas fa-image text-4xl 2xl:text-5xl"></i>
@@ -395,7 +430,6 @@
             </div>
 
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 2xl:gap-6">
-                <!-- Foto 1 -->
                 <div class="aspect-square rounded-2xl overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-emerald-800">
                     <div class="absolute inset-0 bg-gradient-to-br from-emerald-500 to-[#008f5d] opacity-70 group-hover:scale-110 transition-transform duration-500"></div>
                     <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-camera text-white/50 text-3xl 2xl:text-5xl"></i></div>
@@ -403,7 +437,6 @@
                         <p class="text-white font-bold text-sm 2xl:text-base">Rakor UKPBJ Jabar</p>
                     </div>
                 </div>
-                <!-- Foto 2 (Lebih lebar) -->
                 <div class="aspect-square md:col-span-2 rounded-2xl overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-emerald-800">
                     <div class="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-700 opacity-70 group-hover:scale-105 transition-transform duration-500"></div>
                     <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-users text-white/50 text-4xl 2xl:text-6xl"></i></div>
@@ -411,7 +444,6 @@
                         <p class="text-white font-bold text-sm 2xl:text-base">Bimbingan Teknis SiRUP bagi OPD Kab. Karawang</p>
                     </div>
                 </div>
-                <!-- Foto 3 -->
                 <div class="aspect-square rounded-2xl overflow-hidden relative group cursor-pointer border border-slate-200 dark:border-emerald-800">
                     <div class="absolute inset-0 bg-gradient-to-br from-amber-500 to-orange-600 opacity-70 group-hover:scale-110 transition-transform duration-500"></div>
                     <div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-handshake text-white/50 text-3xl 2xl:text-5xl"></i></div>
@@ -429,22 +461,17 @@
         </div>
     </div>
 
-
     <!-- 6. MEGA FOOTER ELEGAN -->
-    <!-- Diberikan 'pb-32 2xl:pb-48' agar tombol mengambang TIDAK MENABRAK teks footer saat scroll mentok bawah -->
     <footer class="relative z-10 bg-white/95 dark:bg-emerald-950/95 border-t border-slate-200 dark:border-emerald-800/50 pt-16 pb-32 2xl:pb-48 mt-auto backdrop-blur-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div class="max-w-7xl 2xl:max-w-screen-2xl mx-auto px-6 sm:px-12 2xl:px-24">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 2xl:gap-16 mb-12">
-                
                 <div class="space-y-6">
                     <div class="flex items-center gap-3">
                         <div class="bg-slate-50 dark:bg-emerald-900 p-2.5 rounded-xl shadow-sm border border-slate-200 dark:border-emerald-700">
                             <i class="fas fa-building text-[#008f5d] dark:text-emerald-400 text-2xl"></i>
                         </div>
                         <div class="flex flex-col leading-none">
-                            <span class="text-2xl font-black tracking-tighter uppercase text-slate-800 dark:text-white">
-                                LPSE
-                            </span>
+                            <span class="text-2xl font-black tracking-tighter uppercase text-slate-800 dark:text-white">LPSE</span>
                             <span class="text-xs font-bold text-slate-500 dark:text-emerald-300 uppercase tracking-widest mt-1">Kab. Karawang</span>
                         </div>
                     </div>
@@ -502,10 +529,8 @@
                         </a>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Bagian Hak Cipta dilindungi, aman karena ada pb-32 di pembungkus luar -->
             <div class="border-t border-slate-200 dark:border-emerald-800/50 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
                 <p class="text-xs 2xl:text-sm font-bold text-slate-500 dark:text-emerald-300/60 uppercase tracking-widest text-center md:text-left">
                     &copy; {{ date('Y') }} LPSE Kabupaten Karawang. Hak Cipta Dilindungi.
@@ -518,15 +543,9 @@
         </div>
     </footer>
 
-
-    <!-- ========================================== -->
-    <!-- WIDGET CONTAINER (Kanan Bawah)             -->
-    <!-- Membawa Tombol Scroll To Top di atas 3 Widget  -->
-    <!-- ========================================== -->
+    <!-- WIDGET CONTAINER (Kanan Bawah) -->
     <div x-data="{ 
         activeWidget: null,
-        
-        // AI Chatbot State
         messages: [
             { sender: 'ai', text: 'Halo! Saya SOWAN AI Assistant. Ada pertanyaan seputar LPSE atau layanan pengadaan?' }
         ], 
@@ -564,8 +583,7 @@
         }
     }" class="fixed bottom-6 right-6 2xl:bottom-10 2xl:right-10 z-[9999] flex flex-col items-end gap-3.5 2xl:gap-5">
 
-        <!-- 0. TOMBOL KEMBALI KE ATAS -->
-        <!-- Kini posisinya sempurna, tidak bentrok dengan teks footer saat mentok bawah (karena footer punya padding besar) -->
+        <!-- TOMBOL KEMBALI KE ATAS -->
         <button x-show="scrolledFromTop" 
                 @click="window.scrollTo({top: 0, behavior: 'smooth'})"
                 x-transition:enter="transition ease-out duration-300"
@@ -579,7 +597,7 @@
             <i class="fas fa-arrow-up text-xl 2xl:text-2xl"></i>
         </button>
 
-        <!-- 1. Widget Chatbot AI -->
+        <!-- Widget Chatbot AI -->
         <div class="relative" x-show="activeWidget === null || activeWidget === 'ai'">
             <button @click="activeWidget = activeWidget === 'ai' ? null : 'ai'" class="w-12 h-12 2xl:w-14 2xl:h-14 rounded-full bg-gradient-to-br from-[#008f5d] to-emerald-700 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group border-2 border-white/20" title="SOWAN AI Assistant">
                 <i class="fas fa-robot text-lg 2xl:text-xl group-hover:rotate-12 transition-transform" x-show="activeWidget !== 'ai'"></i>
@@ -587,7 +605,6 @@
                 <span class="absolute top-0 right-0 w-3 h-3 bg-emerald-400 border-2 border-white rounded-full animate-pulse" x-show="activeWidget !== 'ai'"></span>
             </button>
 
-            <!-- Panel AI -->
             <div x-show="activeWidget === 'ai'" 
                  x-transition.opacity.translate.y.duration.300ms
                  class="absolute bottom-full mb-3 right-0 w-[90vw] sm:w-[380px] h-[500px] 2xl:w-[450px] 2xl:h-[600px] bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden backdrop-blur-lg" x-cloak>
@@ -639,20 +656,18 @@
             </div>
         </div>
 
-        <!-- 2. Widget WhatsApp Konsul -->
+        <!-- Widget WhatsApp Konsul -->
         <a href="https://wa.me/6281234567890" target="_blank" x-show="activeWidget === null" class="w-12 h-12 2xl:w-14 2xl:h-14 rounded-full bg-[#25D366] text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-white/20" title="WhatsApp Konsultasi">
             <i class="fab fa-whatsapp text-2xl 2xl:text-3xl group-hover:rotate-12 transition-transform"></i>
         </a>
 
-        <!-- 3. Widget Aksesibilitas Disabilitas (Direvisi Penuh) -->
-        <!-- Bulat Emerald Green dominan, Ikon Putih murni, Sama persis dengan pola WhatsApp -->
+        <!-- Widget Aksesibilitas Disabilitas -->
         <div class="relative" x-show="activeWidget === null || activeWidget === 'a11y'">
             <button @click="activeWidget = activeWidget === 'a11y' ? null : 'a11y'" class="w-12 h-12 2xl:w-14 2xl:h-14 rounded-full bg-[#008f5d] hover:bg-emerald-700 text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-300 group cursor-pointer border-2 border-emerald-400/20" title="Menu Aksesibilitas Disabilitas">
                 <i class="fas fa-universal-access text-2xl 2xl:text-3xl group-hover:rotate-12 transition-transform" x-show="activeWidget !== 'a11y'"></i>
                 <i class="fas fa-times text-xl" x-show="activeWidget === 'a11y'" x-cloak></i>
             </button>
 
-            <!-- Panel Aksesibilitas -->
             <div id="a11y-panel" x-show="activeWidget === 'a11y'" x-transition.opacity.translate.y.duration.300ms class="absolute bottom-full mb-3 right-0 w-80 2xl:w-96 bg-white dark:bg-emerald-900 border border-emerald-100 dark:border-emerald-800 rounded-3xl shadow-2xl p-4 2xl:p-5 flex flex-col gap-3 backdrop-blur-lg" x-cloak>
                 <div class="flex items-center justify-between border-b border-slate-100 dark:border-emerald-800 pb-2">
                     <span class="font-black text-xs 2xl:text-sm uppercase tracking-wider text-slate-700 dark:text-emerald-100 flex items-center gap-2">
@@ -723,7 +738,7 @@
             if(isHighlightLinks) {
                 const style = document.createElement('style');
                 style.id = 'a11y-link-style';
-                style.innerHTML = 'a { text-decoration: underline !important; font-weight: bold !important; color: #047857 !important; }';
+                style.innerHTML = 'a { text-decoration: underline !important; font-weight: bold !important; color: #34d399 !important; }';
                 document.head.appendChild(style);
             } else {
                 const el = document.getElementById('a11y-link-style');

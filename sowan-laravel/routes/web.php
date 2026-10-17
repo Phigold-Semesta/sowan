@@ -20,6 +20,8 @@ use App\Http\Controllers\PimpinanController;
 
 use App\Http\Controllers\LiveChatController;
 
+use App\Http\Controllers\PublikController;
+
 use Illuminate\Support\Facades\Route;
 
 use Illuminate\Support\Facades\Auth;
@@ -51,6 +53,15 @@ use Illuminate\Support\Facades\Auth;
 Route::get('/', function () {
     return view('welcome');
 })->name('landing');
+
+
+// ==========================================
+// RUTE HALAMAN PUBLIK LPSE
+// ==========================================
+Route::get('/', [PublikController::class, 'beranda'])->name('beranda');
+Route::get('/profil', [PublikController::class, 'profil'])->name('publik.profil');
+Route::get('/layanan', [PublikController::class, 'layanan'])->name('publik.layanan');
+Route::get('/panduan', [PublikController::class, 'panduan'])->name('publik.panduan');
 
 // --- 2. PORTAL PUBLIK (Tamu Online) ---
 Route::prefix('portal')->name('tamu.')->group(function () {
@@ -199,6 +210,7 @@ Route::post('/{id}/proses', [PetugasController::class, 'prosesKeputusan'])->name
         Route::prefix('ai-scanner')->name('ai_scanner.')->group(function () {
             Route::get('/kamera', [\App\Http\Controllers\AiController::class, 'kamera'])->name('kamera');
             Route::post('/process', [\App\Http\Controllers\AiController::class, 'processAi'])->name('process');
+            Route::post('/konfirmasi', [AiController::class, 'konfirmasi'])->name('konfirmasi');
         });
 
 // Tambahkan ini di dalam group route petugas Anda

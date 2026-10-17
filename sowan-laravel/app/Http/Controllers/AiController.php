@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Kunjungan;
 use App\Models\PetugasTujuan;
 use App\Models\Tamu;
-use App\Models\User;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,71 +15,75 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Throwable;
 
+/**
+ * AI Scanner SOWAN, alur dua tahap:
+ *   1) processAi  : menganalisis video (wajah + suara), TIDAK menyimpan apa pun.
+ *   2) konfirmasi : menyimpan tamu + kunjungan setelah petugas memeriksa formulir.
+ *
+ * Tamu cukup berdiri di depan webcam dan berbicara. Gmail TIDAK perlu diucapkan:
+ *   - Tamu lama (wajah dikenali): semua data diambil dari database.
+ *   - Tamu baru tanpa gmail     : dibuatkan gmail sementara (@walkin.sowan.local).
+ */
 class AiController extends Controller
 {
-    private const NAMA_PLACEHOLDER = ['', 'Tamu Tidak Dikenal', 'Tamu Otomatis AI'];
-    private const INSTANSI_PLACEHOLDER = ['', 'Instansi Pribadi', 'Instansi Pribadi / Umum', 'Instansi Umum (AI Scanner)'];
     private const GELAR = ['pak', 'bapak', 'bu', 'ibu', 'mas', 'mbak', 'kak', 'dr', 'ir', 'drs', 'bpk', 'saudara'];
 
-    public function dashboard(): View
-    {
-        $totalKunjungan = Kunjungan::count();
-        $kunjunganHariIni = Kunjungan::whereDate('waktu_masuk', today())->count();
-        $totalTamu = Tamu::count();
-        $totalPetugas = User::count();
-        $kunjunganTerbaru = Kunjungan::with('tamu')->latest('waktu_masuk')->take(10)->get();
+    // SESUAIKAN nama view dengan folder resources/views SOWAN Anda
+    private const VIEW_KAMERA = 'petugas.ai_scanner.kamera';
 
-        return view('ai_scanner.dashboard', compact(
-            'totalKunjungan', 'kunjunganHariIni', 'totalTamu', 'totalPetugas', 'kunjunganTerbaru'
-        ));
-    }
+    private const DOMAIN_SEMENTARA = 'walkin.sowan.local';
+    private const MASA_SESI_MENIT = 15;
 
     public function kamera(): View
     {
-        return view('petugas.ai_scanner.kamera');
-    }
-
-    public function dataTamu(): View
-    {
-        $daftarKunjungan = Kunjungan::with('tamu')->latest('waktu_masuk')->paginate(10);
-        return view('ai_scanner.tabel', ['kunjungan' => $daftarKunjungan]);
+        return view(self::VIEW_KAMERA);
     }
 
     // ------------------------------------------------------------------
-    // LOGIKA PENCOCOKAN WAJAH (COSINE SIMILARITY)
+    // WAJAH
     // ------------------------------------------------------------------
 
-    private function hitungKemiripanWajah(array $vec1, array $vec2): float
+    private function hitungKemiripanWajah(array $a, array $b): float
     {
-        $n = count($vec1);
-        if ($n === 0 || $n !== count($vec2)) {
+        $n = count($a);
+        if ($n === 0 || $n !== count($b)) {
             return 0.0;
         }
 
-        $dot = $normA = $normB = 0.0;
+        $dot = $na = $nb = 0.0;
         for ($i = 0; $i < $n; $i++) {
-            $a = (float) $vec1[$i];
-            $b = (float) $vec2[$i];
-            $dot += $a * $b;
-            $normA += $a * $a;
-            $normB += $b * $b;
+            $x = (float) $a[$i];
+            $y = (float) $b[$i];
+            $dot += $x * $y;
+            $na += $x * $x;
+            $nb += $y * $y;
         }
 
-        return ($normA == 0.0 || $normB == 0.0) ? 0.0 : $dot / (sqrt($normA) * sqrt($normB));
+        return ($na == 0.0 || $nb == 0.0) ? 0.0 : $dot / (sqrt($na) * sqrt($nb));
     }
 
+    /** Tahan terhadap data berbentuk array, JSON, atau JSON ter-encode ganda. */
     private function ambilVektor(mixed $nilai): ?array
     {
-        $vec = is_string($nilai) ? json_decode($nilai, true) : $nilai;
-        return (is_array($vec) && count($vec) > 0) ? $vec : null;
+        for ($i = 0; $i < 2 && is_string($nilai); $i++) {
+            $nilai = json_decode($nilai, true);
+        }
+        return (is_array($nilai) && count($nilai) > 0) ? $nilai : null;
     }
 
+    /** Array bila model punya $casts, JSON string bila tidak. */
+    private function nilaiSimpanVektor(array $vektor): array|string
+    {
+        return (new Tamu())->hasCast('face_embedding') ? $vektor : json_encode($vektor);
+    }
+
+    /** @return array{0: ?Tamu, 1: float} */
     private function cariTamuByWajah(array $embeddingBaru): array
     {
         $bestScore = 0.0;
         $bestTamu = null;
 
-        // Hanya mencari dari kolom face_embedding di tabel tamu
+        // face_embedding ada di $hidden (tidak ke JSON), tetapi tetap terbaca di server
         foreach (Tamu::whereNotNull('face_embedding')->get() as $tamuDb) {
             if ($v = $this->ambilVektor($tamuDb->face_embedding)) {
                 $score = $this->hitungKemiripanWajah($embeddingBaru, $v);
@@ -95,7 +98,7 @@ class AiController extends Controller
     }
 
     // ------------------------------------------------------------------
-    // UTILITAS NLP (PEMBERSIHAN TEKS & PENCARIAN NAMA PETUGAS)
+    // UTILITAS
     // ------------------------------------------------------------------
 
     private function bersihNilai(mixed $nilai): ?string
@@ -107,15 +110,33 @@ class AiController extends Controller
         return in_array(Str::lower($s), ['', 'null', '-', 'tidak disebutkan', 'tidak ada'], true) ? null : $s;
     }
 
-    private function isPlaceholder(?string $nilai, array $daftar): bool
+    private function namaPetugas(PetugasTujuan $p): string
     {
-        return $nilai === null || in_array(trim($nilai), $daftar, true);
+        return (string) ($p->nama_petugas ?? $p->nama_tujuan ?? $p->nama ?? '');
     }
+
+    private function aliasPetugas(PetugasTujuan $p): array
+    {
+        return isset($p->alias) ? array_values(array_filter(array_map('trim', explode(',', (string) $p->alias)))) : [];
+    }
+
+    private function gmailSementara(): string
+    {
+        return 'walkin-' . Str::lower(Str::random(10)) . '@' . self::DOMAIN_SEMENTARA;
+    }
+
+    private function isGmailSementara(?string $gmail): bool
+    {
+        return $gmail !== null && str_ends_with($gmail, '@' . self::DOMAIN_SEMENTARA);
+    }
+
+    // ------------------------------------------------------------------
+    // PENCOCOKAN PETUGAS
+    // ------------------------------------------------------------------
 
     private function normalisasiNama(string $nama): string
     {
-        $nama = Str::lower(trim($nama));
-        $nama = preg_replace('/[^a-z\s]/', ' ', $nama);
+        $nama = preg_replace('/[^a-z\s]/', ' ', Str::lower(trim($nama)));
         $kata = array_filter(preg_split('/\s+/', $nama), fn ($k) => $k !== '' && !in_array($k, self::GELAR, true));
         return implode(' ', $kata);
     }
@@ -154,6 +175,7 @@ class AiController extends Controller
         return $skor;
     }
 
+    /** @return array{0: ?PetugasTujuan, 1: float} */
     private function cariPetugasTujuan(?string $cocokPython, ?string $disebut): array
     {
         $kandidat = array_values(array_filter([$cocokPython, $disebut]));
@@ -164,15 +186,11 @@ class AiController extends Controller
         $threshold = (float) env('PETUGAS_MATCH_THRESHOLD', 0.75);
         $hasil = [];
 
-        // Menggunakan model PetugasTujuan
         foreach (PetugasTujuan::all() as $petugas) {
-            $namaMaster = array_filter([
-                $petugas->nama_petugas ?? $petugas->nama_tujuan ?? $petugas->nama ?? ''
-            ]);
+            $namaMaster = array_filter(array_merge([$this->namaPetugas($petugas)], $this->aliasPetugas($petugas)));
 
             $best = 0.0;
             foreach ($namaMaster as $nm) {
-                if ($nm === '') continue;
                 foreach ($kandidat as $kd) {
                     $best = max($best, $this->skorNama($kd, $nm));
                 }
@@ -185,12 +203,51 @@ class AiController extends Controller
         if (!$hasil || $hasil[0]['skor'] < $threshold) {
             return [null, $hasil[0]['skor'] ?? 0.0];
         }
+        // Dua petugas sama kuat: jangan menebak
+        if (isset($hasil[1]) && abs($hasil[0]['skor'] - $hasil[1]['skor']) < 0.001) {
+            return [null, $hasil[0]['skor']];
+        }
 
         return [$hasil[0]['petugas'], $hasil[0]['skor']];
     }
 
     // ------------------------------------------------------------------
-    // PROSES UTAMA (API KE PYTHON & PENYIMPANAN DB)
+    // DAFTAR UNTUK DROPDOWN
+    // ------------------------------------------------------------------
+
+    /** Daftar layanan. Mengenali nama kolom label secara otomatis bila bukan nama_layanan. */
+    private function daftarLayanan(): array
+    {
+        return DB::table('layanan')->get()->map(function ($row) {
+            $a = (array) $row;
+            $id = $a['id_layanan'] ?? reset($a);
+
+            $nama = $a['nama_layanan'] ?? $a['nama'] ?? $a['layanan'] ?? null;
+            if ($nama === null) {
+                foreach ($a as $kolom => $nilai) {
+                    if ($kolom !== 'id_layanan' && is_string($nilai) && !str_ends_with($kolom, '_at')) {
+                        $nama = $nilai;
+                        break;
+                    }
+                }
+            }
+
+            return ['id_layanan' => $id, 'nama' => $nama ?? ('Layanan #' . $id)];
+        })->sortBy('id_layanan')->values()->all();
+    }
+
+    private function daftarPetugasDropdown(): array
+    {
+        return PetugasTujuan::all()
+            ->map(fn ($p) => ['id_petugas' => $p->id_petugas, 'nama_petugas' => $this->namaPetugas($p)])
+            ->filter(fn ($p) => $p['nama_petugas'] !== '')
+            ->sortBy('nama_petugas', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    // ------------------------------------------------------------------
+    // TAHAP 1: ANALISIS (belum menyimpan apa pun ke database)
     // ------------------------------------------------------------------
 
     public function processAi(Request $request): JsonResponse
@@ -204,10 +261,11 @@ class AiController extends Controller
         $file = $request->file('media_file');
         $pythonAiUrl = env('PYTHON_AI_URL', 'http://127.0.0.1:8001/api/v1/analyze');
 
-        // Mengambil daftar petugas dari model PetugasTujuan
-        $daftarPetugas = PetugasTujuan::all()->map(function ($p) {
-            return ['nama_petugas' => $p->nama_petugas ?? $p->nama_tujuan ?? $p->nama ?? ''];
-        })->filter(fn($p) => $p['nama_petugas'] !== '')->values()->all();
+        $daftarPetugas = PetugasTujuan::all()
+            ->map(fn ($p) => ['nama_petugas' => $this->namaPetugas($p), 'alias' => implode(',', $this->aliasPetugas($p))])
+            ->filter(fn ($p) => $p['nama_petugas'] !== '')
+            ->values()
+            ->all();
 
         try {
             $response = Http::timeout(180)
@@ -258,113 +316,167 @@ class AiController extends Controller
         $kunjunganData = $aiData['kunjungan'] ?? [];
         $newEmbedding  = $this->ambilVektor($aiData['face_embedding'] ?? null);
         $debug         = $aiResult['debug'] ?? [];
+        $threshold     = (float) env('FACE_MATCH_THRESHOLD', 0.70);
 
-        $namaAi     = $this->bersihNilai($tamuData['nama_tamu'] ?? null);
-        $instansiAi = $this->bersihNilai($tamuData['nama_instansi'] ?? null);
-        $waAi       = $this->bersihNilai($tamuData['no_wa'] ?? null);
-        $threshold  = (float) env('FACE_MATCH_THRESHOLD', 0.70);
+        // Identifikasi MURNI berdasarkan wajah (bukan nama / gmail)
+        [$terdekat, $skor] = $newEmbedding ? $this->cariTamuByWajah($newEmbedding) : [null, 0.0];
+        $dikenali = $terdekat !== null && $skor >= $threshold;
 
         $petugasDisebut = $this->bersihNilai($kunjunganData['petugas_disebut'] ?? null);
-        $petugasCocokPy = $this->bersihNilai($kunjunganData['petugas_cocok'] ?? null);
-        
-        [$petugasMaster, $skorPetugas] = $this->cariPetugasTujuan($petugasCocokPy, $petugasDisebut);
+        [$petugas, $skorPetugas] = $this->cariPetugasTujuan(
+            $this->bersihNilai($kunjunganData['petugas_cocok'] ?? null),
+            $petugasDisebut
+        );
 
-        $petugasTujuanTeks = $petugasMaster->nama_petugas ?? $petugasMaster->nama_tujuan ?? $petugasMaster->nama ?? $petugasDisebut ?? 'Administrator LPSE';
+        // Data sementara disimpan di SESSION server (vektor wajah tidak dikirim ke browser).
+        // Memakai session karena pasti aktif, tidak bergantung pada tabel cache.
+        $token = (string) Str::uuid();
+        $request->session()->put('ai_scan', [
+            'token'     => $token,
+            'embedding' => $newEmbedding,
+            'gmail'     => $dikenali ? $terdekat->gmail : null,
+            'expires'   => now()->addMinutes(self::MASA_SESI_MENIT)->timestamp,
+        ]);
+
+        $gmailTamu = $dikenali ? $terdekat->gmail : null;
+
+        return response()->json([
+            'status' => 'success',
+            'token'  => $token,
+            'data'   => [
+                'kategori'        => $dikenali ? 'Tamu Lama' : 'Tamu Baru',
+                'gmail'           => $gmailTamu,
+                'gmail_sementara' => $this->isGmailSementara($gmailTamu),
+                'nama_tamu'       => $dikenali ? $terdekat->nama_tamu     : $this->bersihNilai($tamuData['nama_tamu'] ?? null),
+                'no_wa'           => $dikenali ? $terdekat->no_wa         : $this->bersihNilai($tamuData['no_wa'] ?? null),
+                'jenis_tamu'      => $dikenali ? $terdekat->jenis_tamu    : null,
+                'nama_instansi'   => $dikenali ? $terdekat->nama_instansi : $this->bersihNilai($tamuData['nama_instansi'] ?? null),
+                'alamat_kantor'   => $dikenali ? $this->bersihNilai($terdekat->alamat_kantor) : null,
+                'hadir_sebagai'   => $dikenali ? $this->bersihNilai($terdekat->hadir_sebagai) : null,
+                'id_petugas'      => $petugas?->id_petugas,
+                'petugas_disebut' => $petugasDisebut,
+                'keperluan'       => $this->bersihNilai($kunjunganData['keterangan_keperluan'] ?? null),
+            ],
+            'ai_debug' => [
+                'transkrip'         => $debug['transkrip'] ?? '',
+                'sumber_ekstraksi'  => $debug['sumber_ekstraksi'] ?? null,
+                'wajah_terdeteksi'  => $debug['wajah_terdeteksi'] ?? ($newEmbedding !== null),
+                'audio_ada'         => $debug['audio_ada'] ?? null,
+                'gemini_error'      => $debug['gemini_error'] ?? null,
+                'galeri_bertambah'  => $debug['galeri_bertambah'] ?? null,
+                'skor_kemiripan'    => round($skor, 3),
+                'ambang_wajah'      => $threshold,
+                'tamu_terdekat'     => $terdekat ? $terdekat->nama_tamu : null,
+                'petugas_terdaftar' => $petugas !== null,
+                'skor_petugas'      => round($skorPetugas, 3),
+            ],
+            'daftar_petugas' => $this->daftarPetugasDropdown(),
+            'daftar_layanan' => $this->daftarLayanan(),
+        ]);
+    }
+
+    // ------------------------------------------------------------------
+    // TAHAP 2: KONFIRMASI & SIMPAN
+    // ------------------------------------------------------------------
+
+    public function konfirmasi(Request $request): JsonResponse
+    {
+        // Rapikan masukan sebelum divalidasi
+        $request->merge([
+            'no_wa' => preg_replace('/[^0-9+]/', '', (string) $request->input('no_wa', '')),
+            'gmail' => Str::lower(trim((string) $request->input('gmail', ''))) ?: null,
+        ]);
+
+        $v = $request->validate([
+            'token'         => 'required|string',
+            'gmail'         => 'nullable|email|max:255',
+            'nama_tamu'     => 'required|string|max:100',
+            'no_wa'         => ['required', 'regex:/^\+?[0-9]{8,20}$/'],
+            'jenis_tamu'    => 'required|in:Penyedia,Non-Penyedia',
+            'nama_instansi' => 'nullable|string|max:100',
+            'alamat_kantor' => 'nullable|string',
+            'hadir_sebagai' => 'nullable|string|max:50',
+            'id_layanan'    => 'required|integer|exists:layanan,id_layanan',
+            'id_petugas'    => 'required|integer|exists:petugas_tujuan,id_petugas',
+            'keperluan'     => 'nullable|string|max:2000',
+        ], [
+            'no_wa.required' => 'No. WhatsApp wajib diisi.',
+            'no_wa.regex'    => 'No. WhatsApp tidak valid (8 sampai 20 angka).',
+            'gmail.email'    => 'Format gmail/email tidak valid.',
+        ]);
+
+        $sesi = $request->session()->get('ai_scan');
+        if (
+            !$sesi
+            || !hash_equals((string) $sesi['token'], (string) $v['token'])
+            || now()->timestamp > (int) $sesi['expires']
+        ) {
+            return response()->json(['status' => 'error', 'message' => 'Sesi kedaluwarsa. Silakan rekam ulang.'], 410);
+        }
+
+        // Tamu lama: gmail dari database. Tamu baru: gmail ketikan petugas, atau gmail sementara.
+        $gmail = $sesi['gmail'] ?: ($v['gmail'] ?? $this->gmailSementara());
+
+        $atribut = [
+            'nama_tamu'     => $v['nama_tamu'],
+            'no_wa'         => $v['no_wa'],
+            'jenis_tamu'    => $v['jenis_tamu'],
+            'nama_instansi' => $v['nama_instansi'] ?? null,
+            'alamat_kantor' => $v['alamat_kantor'] ?? null,
+            'hadir_sebagai' => $v['hadir_sebagai'] ?? null,
+        ];
 
         try {
-            [$tamu, $kunjungan, $kategoriTamu, $skor, $terdekat] = DB::transaction(
-                function () use (
-                    $newEmbedding, $namaAi, $instansiAi, $waAi, $kunjunganData, $threshold,
-                    $petugasTujuanTeks
-                ) {
-                    $kategoriTamu = 'Tamu Baru';
-                    $tamu = null;
-                    $bestScore = 0.0;
-                    $terdekat = null;
+            $kunjungan = DB::transaction(function () use ($gmail, $atribut, $sesi, $v) {
+                $tamu = Tamu::find($gmail);
 
-                    if ($newEmbedding) {
-                        [$terdekat, $bestScore] = $this->cariTamuByWajah($newEmbedding);
+                if ($tamu) {
+                    // Hanya timpa kolom yang terisi, agar data lama tidak hilang
+                    $tamu->update(array_filter($atribut, fn ($x) => $x !== null));
 
-                        if ($terdekat && $bestScore >= $threshold) {
-                            $tamu = $terdekat;
-                            $kategoriTamu = 'Tamu Lama';
-                        }
+                    // Wajah lama tidak ditimpa; hanya diisi bila tamu belum punya data wajah
+                    if (empty($tamu->face_embedding) && $sesi['embedding']) {
+                        $tamu->update(['face_embedding' => $this->nilaiSimpanVektor($sesi['embedding'])]);
                     }
-
-                    if ($tamu) {
-                        $update = [];
-                        if ($namaAi && $this->isPlaceholder($tamu->nama_tamu, self::NAMA_PLACEHOLDER)) {
-                            $update['nama_tamu'] = $namaAi;
-                        }
-                        if ($instansiAi && $this->isPlaceholder($tamu->nama_instansi, self::INSTANSI_PLACEHOLDER)) {
-                            $update['nama_instansi'] = $instansiAi;
-                        }
-                        if ($waAi && empty($tamu->no_wa)) {
-                            $update['no_wa'] = $waAi;
-                        }
-                        
-                        // Perbarui vektor wajah jika yang baru lebih baik/jelas namun belum menimpa
-                        if ($newEmbedding && $bestScore < 0.95) {
-                            $update['face_embedding'] = json_encode($newEmbedding);
-                        }
-
-                        if ($update) {
-                            $tamu->update($update);
-                        }
-                    } else {
-                        $tamu = Tamu::create([
-                            'nama_tamu'      => $namaAi ?? 'Tamu Tidak Dikenal',
-                            'no_wa'          => $waAi,
-                            'nama_instansi'  => $instansiAi ?? 'Instansi Pribadi',
-                            'face_embedding' => $newEmbedding ? json_encode($newEmbedding) : null,
-                        ]);
-                    }
-
-                    $kunjungan = Kunjungan::create([
-                        'tamu_id'               => $tamu->id,
-                        'user_id'               => null,
-                        'waktu_masuk'           => now(),
-                        'kategori_tamu'         => $kategoriTamu,
-                        'petugas_tujuan'        => $petugasTujuanTeks,
-                        'keterangan_keperluan'  => $this->bersihNilai($kunjunganData['keterangan_keperluan'] ?? null) ?? '-',
-                        'status'                => 'Belum Dilayani',
-                    ]);
-
-                    return [$tamu, $kunjungan, $kategoriTamu, $bestScore, $terdekat];
+                } else {
+                    // Kolom NOT NULL yang tidak bisa diambil dari suara diberi isian bawaan '-'
+                    $tamu = Tamu::create(array_merge(
+                        ['gmail' => $gmail],
+                        $atribut,
+                        [
+                            'alamat_kantor'  => $atribut['alamat_kantor'] ?? '-',
+                            'hadir_sebagai'  => $atribut['hadir_sebagai'] ?? '-',
+                            'face_embedding' => $sesi['embedding'] ? $this->nilaiSimpanVektor($sesi['embedding']) : null,
+                        ]
+                    ));
                 }
-            );
+
+                return Kunjungan::create([
+                    'gmail'                => $tamu->gmail,
+                    'id_layanan'           => $v['id_layanan'],
+                    'id_petugas'           => $v['id_petugas'],
+                    'waktu_masuk'          => now(),
+                    'status'               => 'Belum Dilayani',
+                    'keterangan_keperluan' => $v['keperluan'] ?? null,
+                ]);
+            });
         } catch (Throwable $e) {
-            Log::error('AI DB Error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            Log::error('AI konfirmasi gagal: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
 
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Hasil AI diterima, tetapi gagal disimpan ke database.',
+                'message' => 'Gagal menyimpan ke database.',
                 'detail'  => $e->getMessage(),
             ], 500);
         }
 
-        $tamu->makeHidden('face_embedding');
+        $request->session()->forget('ai_scan');
 
         return response()->json([
-            'status'  => 'success',
-            'message' => 'Analisis AI berhasil diproses dan disimpan!',
-            'data'    => [
-                'tamu'      => $tamu,
-                'kunjungan' => $kunjungan,
-                'ai_debug'  => [
-                    'transkrip'          => $debug['transkrip'] ?? '',
-                    'sumber_ekstraksi'   => $debug['sumber_ekstraksi'] ?? null,
-                    'wajah_terdeteksi'   => $debug['wajah_terdeteksi'] ?? ($newEmbedding !== null),
-                    'audio_ada'          => $debug['audio_ada'] ?? null,
-                    'gemini_error'       => $debug['gemini_error'] ?? null,
-                    'skor_kemiripan'     => round($skor, 3),
-                    'ambang_wajah'       => $threshold,
-                    'tamu_terdekat'      => $terdekat ? ('#' . $terdekat->id . ' ' . $terdekat->nama_tamu) : null,
-                    'petugas_disebut'    => $petugasDisebut,
-                    'petugas_terdaftar'  => $petugasMaster !== null,
-                    'skor_petugas'       => round($skorPetugas, 3),
-                ],
-            ],
+            'status'          => 'success',
+            'message'         => 'Kunjungan tersimpan.',
+            'id'              => $kunjungan->getKey(),
+            'gmail_sementara' => $this->isGmailSementara($gmail),
         ]);
     }
 }

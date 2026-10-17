@@ -2,19 +2,18 @@
 
 namespace App\Models;
 
-// PENTING: Menambahkan trait ini agar model bisa digunakan untuk autentikasi (login)
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+// Trait Authenticatable dipertahankan agar model tetap bisa dipakai untuk login
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
 class Tamu extends Authenticatable
 {
     use HasFactory, Notifiable;
 
     /**
-     * Konfigurasi tabel dan primary key.
-     * Menggunakan gmail sebagai primary key string dan menonaktifkan auto-increment.
+     * Tabel tamu memakai gmail (string) sebagai primary key, tanpa auto-increment.
      */
     protected $table = 'tamu';
     protected $primaryKey = 'gmail';
@@ -22,61 +21,65 @@ class Tamu extends Authenticatable
     protected $keyType = 'string';
 
     /**
-     * Properti fillable untuk mass assignment.
+     * Kolom yang boleh diisi massal.
+     * face_embedding ditambahkan untuk fitur AI Scanner.
+     * Catatan: kolom 'password' TIDAK ada di tabel tamu (db_sowan_v2).
+     * Dibiarkan di sini hanya agar kode login lama tidak error bila dipakai.
      */
     protected $fillable = [
-        'gmail', 
-        'password', 
-        'no_wa', 
-        'nama_tamu', 
-        'jenis_tamu', 
-        'nama_instansi', 
-        'alamat_kantor', 
-        'hadir_sebagai'
+        'gmail',
+        'password',
+        'no_wa',
+        'nama_tamu',
+        'jenis_tamu',
+        'nama_instansi',
+        'alamat_kantor',
+        'hadir_sebagai',
+        'face_embedding',
     ];
 
     /**
-     * Sembunyikan password agar tidak terekspos saat model diubah ke array/JSON.
+     * Disembunyikan dari JSON/array supaya vektor wajah (data biometrik)
+     * tidak ikut terkirim ke browser. Tetap bisa dibaca di server
+     * lewat $tamu->face_embedding.
      */
     protected $hidden = [
         'password',
         'remember_token',
+        'face_embedding',
     ];
 
     /**
-     * Casting tipe data untuk keamanan data.
+     * Sengaja TIDAK ada cast untuk face_embedding:
+     * AiController menyimpannya sebagai JSON string dan membacanya
+     * lewat ambilVektor().
      */
     protected $casts = [
         'gmail'    => 'string',
         'password' => 'hashed',
     ];
 
-    /**
-     * PENTING: Memberitahu Laravel bahwa Primary Key untuk autentikasi adalah 'gmail'.
-     */
     public function getAuthIdentifierName()
     {
         return 'gmail';
     }
 
-    /**
-     * Mengembalikan nilai identifier (gmail) untuk autentikasi.
-     */
     public function getAuthIdentifier()
     {
         return $this->gmail;
     }
 
     /**
-     * Pastikan Laravel mengambil kolom password yang benar untuk verifikasi.
+     * Perbaikan: sebelumnya memakai return type string tanpa fallback,
+     * sehingga error TypeError bila kolom password tidak ada / NULL.
      */
     public function getAuthPassword(): string
     {
-        return $this->password;
+        return (string) ($this->password ?? '');
     }
 
     /**
-     * RELASI: Satu tamu memiliki banyak riwayat kunjungan.
+     * Satu tamu memiliki banyak riwayat kunjungan.
      */
     public function kunjungan(): HasMany
     {
@@ -84,7 +87,7 @@ class Tamu extends Authenticatable
     }
 
     /**
-     * RELASI: Satu tamu dapat memberikan rating berkali-kali.
+     * Satu tamu dapat memberikan rating berkali-kali.
      */
     public function ratings(): HasMany
     {
